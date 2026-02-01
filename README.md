@@ -95,14 +95,6 @@ Fork this project to create your own customized skill collection.
 
 See [AGENTS.md](AGENTS.md) for detailed generation guidelines.
 
-## Sponsors
-
-<p align="center">
-  <a href="https://cdn.jsdelivr.net/gh/antfu/static/sponsors.svg">
-    <img src='https://cdn.jsdelivr.net/gh/antfu/static/sponsors.svg'/>
-  </a>
-</p>
-
 ## License
 
 Skills and the scripts in this repository are [MIT](LICENSE.md) licensed.

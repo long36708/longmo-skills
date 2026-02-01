@@ -1,0 +1,6 @@
+[submodule "vendor/vueuse"]
+	path = vendor/vueuse
+	url = https://github.com/vueuse/skills
+[submodule "vendor/tsdown"]
+	path = vendor/tsdown
+	url = https://github.com/rolldown/tsdown

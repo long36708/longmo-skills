@@ -1,20 +1,20 @@
 ---
-title: Use `HttpResponse` for Cookie Mocking Instead of Native `Response`
+title: 使用 `HttpResponse` 替代原生 `Response` 进行 Cookie 模拟
 impact: HIGH
-description: '`HttpResponse` supports `Set-Cookie` headers. The native `Response` constructor forbids them.'
+description: '`HttpResponse` 支持 `Set-Cookie` 头。原生的 `Response` 构造函数禁止使用它们。'
 tags: response, HttpResponse, cookies, Set-Cookie, forbidden-header
 ---
 
-# Use `HttpResponse` for Cookie Mocking Instead of Native `Response`
+# 使用 `HttpResponse` 替代原生 `Response` 进行 Cookie 模拟
 
-## Problem
+## 问题
 
-The native `Response` class forbids the `Set-Cookie` header in the constructor. Using `new Response()` with `Set-Cookie` silently drops the header.
+原生的 `Response` 类在构造函数中禁止使用 `Set-Cookie` 头。使用带有 `Set-Cookie` 的 `new Response()` 会静默丢弃该头。
 
-## Incorrect
+## 错误示例
 
 ```typescript
-// BUG: Set-Cookie is a forbidden response header in native Response
+// BUG: Set-Cookie 是原生 Response 中的禁止响应头
 http.get('/api/login', () => {
   return new Response(JSON.stringify({ success: true }), {
     headers: {
@@ -23,10 +23,10 @@ http.get('/api/login', () => {
     },
   })
 })
-// The Set-Cookie header is silently dropped!
+// Set-Cookie 头被静默丢弃！
 ```
 
-## Correct
+## 正确示例
 
 ```typescript
 import { http, HttpResponse } from 'msw'
@@ -43,10 +43,10 @@ http.get('/api/login', () => {
 })
 ```
 
-## When to Use Which
+## 何时使用哪种方式
 
-For responses that don't need `Set-Cookie`, you can use either `new Response()` or `HttpResponse`. Both work. Use `HttpResponse` when you need cookies or want consistency.
+对于不需要 `Set-Cookie` 的响应，您可以使用 `new Response()` 或 `HttpResponse`。两者都有效。当需要 cookie 或想要一致性时，请使用 `HttpResponse`。
 
-## Why
+## 原因
 
-The Fetch API spec forbids `Set-Cookie` in the `Response` constructor's `Headers`. MSW's `HttpResponse` extends `Response` but bypasses this restriction for mock responses, since mock cookies need to be testable.
+Fetch API 规范禁止在 `Response` 构造函数的 `Headers` 中使用 `Set-Cookie`。MSW 的 `HttpResponse` 扩展了 `Response`，但为模拟响应绕过了此限制，因为模拟 cookie 需要可测试。

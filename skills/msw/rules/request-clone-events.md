@@ -1,27 +1,27 @@
 ---
-title: Clone Request Before Reading Body in Lifecycle Events
+title: 在生命周期事件中读取请求体前先克隆请求
 impact: HIGH
-description: In lifecycle event listeners, always clone the request before reading its body. Reading consumes the body stream, breaking downstream handlers.
+description: 在生命周期事件监听器中，读取请求体前始终先克隆请求。读取会消耗请求体流，破坏下游处理器。
 tags: request, clone, events, body, stream
 ---
 
-# Clone Request Before Reading Body in Lifecycle Events
+# 在生命周期事件中读取请求体前先克隆请求
 
-## Problem
+## 问题
 
-When you read `request.json()` in a lifecycle event handler like `request:start`, the body stream is consumed. The actual request handler then gets an empty body.
+当您在生命周期事件处理器（如 `request:start`）中读取 `request.json()` 时，请求体流会被消耗。实际的请求处理器随后会得到空的请求体。
 
-## Incorrect
+## 错误示例
 
 ```typescript
-// BUG: reading body consumes the stream — handler gets empty body
+// BUG: 读取请求体会消耗流 — 处理器得到空请求体
 server.events.on('request:start', async ({ request }) => {
   const body = await request.json()
   console.log('Request body:', body)
 })
 ```
 
-## Correct
+## 正确示例
 
 ```typescript
 server.events.on('request:start', async ({ request }) => {
@@ -31,6 +31,6 @@ server.events.on('request:start', async ({ request }) => {
 })
 ```
 
-## Why
+## 原因
 
-The Fetch API `Request` body is a `ReadableStream` — once read, it's consumed. Lifecycle events share the same `Request` object with handlers. Cloning creates an independent copy with its own body stream, so reading in the event listener doesn't interfere with handler resolution.
+Fetch API `Request` 请求体是一个 `ReadableStream` — 一旦被读取，它就被消耗了。生命周期事件与处理器共享同一个 `Request` 对象。克隆创建一个具有自己请求体流的独立副本，因此事件监听器中的读取不会干扰处理器解析。

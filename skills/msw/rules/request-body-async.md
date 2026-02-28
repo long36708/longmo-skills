@@ -1,27 +1,27 @@
 ---
-title: Always Await Body Reading Methods
+title: 始终使用 Await 读取请求体方法
 impact: HIGH
-description: In v2, request body is read via async Fetch API methods — `await request.json()`, `await request.text()`, `await request.formData()`.
+description: 在 v2 中，请求体通过异步 Fetch API 方法读取 — `await request.json()`、`await request.text()`、`await request.formData()`。
 tags: request, body, async, await, json, formData
 ---
 
-# Always Await Body Reading Methods
+# 始终使用 Await 读取请求体方法
 
-## Problem
+## 问题
 
-v1 auto-parsed request bodies. In v2, the `request` is a standard Fetch API `Request` — body reading is always async.
+v1 自动解析请求体。在 v2 中，`request` 是一个标准的 Fetch API `Request` — 请求体读取始终是异步的。
 
-## Incorrect
+## 错误示例
 
 ```typescript
-// BUG: request.body is a ReadableStream, not parsed data
+// BUG: request.body 是 ReadableStream，不是解析后的数据
 http.post('/api/user', ({ request }) => {
-  const body = request.body // ReadableStream, not the parsed body!
+  const body = request.body // ReadableStream，不是解析后的请求体！
   return HttpResponse.json({ received: body })
 })
 ```
 
-## Correct
+## 正确示例
 
 ```typescript
 http.post('/api/user', async ({ request }) => {
@@ -29,23 +29,23 @@ http.post('/api/user', async ({ request }) => {
   return HttpResponse.json({ received: body })
 })
 
-// Other body reading methods:
+// 其他请求体读取方法：
 // await request.text()
 // await request.formData()
 // await request.arrayBuffer()
 // await request.blob()
 ```
 
-## Body Reading Methods
+## 请求体读取方法
 
-| Method | Returns | Use for |
+| 方法 | 返回 | 用途 |
 |--------|---------|---------|
-| `await request.json()` | Parsed object | JSON payloads |
-| `await request.text()` | String | Plain text, HTML |
-| `await request.formData()` | `FormData` | Form submissions, file uploads |
-| `await request.arrayBuffer()` | `ArrayBuffer` | Binary data |
-| `await request.blob()` | `Blob` | Binary data with MIME type |
+| `await request.json()` | 解析后的对象 | JSON 载荷 |
+| `await request.text()` | 字符串 | 纯文本，HTML |
+| `await request.formData()` | `FormData` | 表单提交，文件上传 |
+| `await request.arrayBuffer()` | `ArrayBuffer` | 二进制数据 |
+| `await request.blob()` | `Blob` | 带 MIME 类型的二进制数据 |
 
-## Why
+## 原因
 
-v2 uses the standard Fetch API `Request` object. Body reading methods return Promises because the body is a stream. The resolver must be `async` or return a Promise when reading the body.
+v2 使用标准的 Fetch API `Request` 对象。请求体读取方法返回 Promise，因为请求体是一个流。解析器在读取请求体时必须是 `async` 或返回 Promise。

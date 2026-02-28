@@ -1,20 +1,20 @@
 ---
-title: Return `{ data }` and `{ errors }` Directly in GraphQL Handlers
+title: 在 GraphQL 处理程序中直接返回 `{ data }` 和 `{ errors }`
 impact: MEDIUM
-description: v2 GraphQL handlers return `HttpResponse.json({ data: ... })` — the v1 `ctx.data()` and `ctx.errors()` helpers are removed.
+description: v2 GraphQL 处理程序返回 `HttpResponse.json({ data: ... })` — v1 中的 `ctx.data()` 和 `ctx.errors()` 辅助函数已被移除。
 tags: graphql, response, data, errors, v2, migration
 ---
 
-# Return `{ data }` and `{ errors }` Directly
+# 直接返回 `{ data }` 和 `{ errors }`
 
-## Problem
+## 问题
 
-v1 used `res(ctx.data({ user: ... }))` for GraphQL responses. In v2, you return the standard GraphQL response shape via `HttpResponse.json()`.
+v1 使用 `res(ctx.data({ user: ... }))` 来处理 GraphQL 响应。在 v2 中，您需要通过 `HttpResponse.json()` 返回标准的 GraphQL 响应结构。
 
-## Incorrect
+## 错误示例
 
 ```typescript
-// BUG: ctx.data() is removed in v2
+// BUG: ctx.data() 在 v2 中被移除
 import { graphql } from 'msw'
 
 graphql.query('GetUser', (req, res, ctx) => {
@@ -22,12 +22,12 @@ graphql.query('GetUser', (req, res, ctx) => {
 })
 ```
 
-## Correct
+## 正确示例
 
 ```typescript
 import { graphql, HttpResponse } from 'msw'
 
-// Success response
+// 成功响应
 graphql.query('GetUser', ({ variables }) => {
   return HttpResponse.json({
     data: {
@@ -36,26 +36,26 @@ graphql.query('GetUser', ({ variables }) => {
   })
 })
 
-// Error response
+// 错误响应
 graphql.query('GetUser', () => {
   return HttpResponse.json({
     errors: [
-      { message: 'User not found' },
+      { message: '用户未找到' },
     ],
   })
 })
 
-// Partial data with errors
+// 部分数据带有错误
 graphql.query('GetUser', () => {
   return HttpResponse.json({
     data: { user: null },
     errors: [
-      { message: 'Unauthorized field access' },
+      { message: '未授权的字段访问' },
     ],
   })
 })
 ```
 
-## Why
+## 原因
 
-v2 removes the GraphQL-specific context utilities. You construct the standard GraphQL response shape (`{ data, errors, extensions }`) directly. This is more explicit and consistent with how GraphQL servers actually respond.
+v2 移除了 GraphQL 特定的上下文工具。您需要直接构建标准的 GraphQL 响应结构（`{ data, errors, extensions }`）。这更加明确，并且与 GraphQL 服务器的实际响应方式保持一致。

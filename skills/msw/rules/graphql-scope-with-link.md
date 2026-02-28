@@ -1,30 +1,30 @@
 ---
-title: Use `graphql.link()` to Scope Handlers to Specific Endpoints
+title: 使用 `graphql.link()` 将处理程序限定到特定端点
 impact: MEDIUM
-description: When an app uses multiple GraphQL APIs, use `graphql.link(url)` to ensure handlers match the correct endpoint.
+description: 当应用程序使用多个 GraphQL API 时，使用 `graphql.link(url)` 确保处理程序匹配正确的端点。
 tags: graphql, link, scope, endpoint, multiple-apis
 ---
 
-# Use `graphql.link()` to Scope Handlers
+# 使用 `graphql.link()` 限定处理程序范围
 
-## Problem
+## 问题
 
-`graphql.query('GetUser', ...)` matches ANY GraphQL endpoint. If two APIs have the same operation name, handlers conflict.
+`graphql.query('GetUser', ...)` 匹配任何 GraphQL 端点。如果两个 API 具有相同的操作名称，处理程序会发生冲突。
 
-## Incorrect
+## 错误示例
 
 ```typescript
-// BUG: matches GetUser on ANY GraphQL endpoint
+// BUG: 在任何 GraphQL 端点上匹配 GetUser
 graphql.query('GetUser', ({ variables }) => {
   return HttpResponse.json({
     data: { user: { id: variables.id, name: 'John' } },
   })
 })
-// If the app talks to both /graphql and https://api.github.com/graphql,
-// this handler intercepts GetUser on BOTH endpoints
+// 如果应用程序同时连接 /graphql 和 https://api.github.com/graphql，
+// 这个处理程序会在两个端点上拦截 GetUser
 ```
 
-## Correct
+## 正确示例
 
 ```typescript
 const github = graphql.link('https://api.github.com/graphql')
@@ -44,6 +44,6 @@ const handlers = [
 ]
 ```
 
-## Why
+## 原因
 
-`graphql.link(url)` creates a scoped handler namespace that only matches requests to the specified URL. Without scoping, operation name collisions across different GraphQL APIs produce unpredictable mock behavior.
+`graphql.link(url)` 创建一个限定范围的处理器命名空间，仅匹配指定 URL 的请求。如果没有范围限定，跨不同 GraphQL API 的操作名称冲突会产生不可预测的模拟行为。

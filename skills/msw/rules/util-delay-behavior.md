@@ -1,57 +1,57 @@
 ---
-title: Use Explicit Milliseconds with `delay()` in Tests
+title: 在测试中使用明确的毫秒数配合 `delay()`
 impact: MEDIUM
-description: '`delay()` without arguments uses a realistic random delay in the browser but is instant (negated) in Node.js. Use `delay(ms)` for predictable test behavior.'
+description: '无参数的 `delay()` 在浏览器中使用真实的随机延迟，但在 Node.js 中是立即的（被取消）。使用 `delay(ms)` 以获得可预测的测试行为。'
 tags: utility, delay, timing, node, browser, testing
 ---
 
-# Use Explicit Milliseconds with `delay()`
+# 使用明确的毫秒数配合 `delay()`
 
-## Problem
+## 问题
 
-`await delay()` in Node.js test environment does nothing — it resolves immediately. Developers expect a 200ms delay and write timing-dependent assertions.
+在 Node.js 测试环境中，`await delay()` 什么都不做 — 它会立即解析。开发者期望有 200ms 的延迟并编写依赖于时间的断言。
 
-## Incorrect
+## 错误示例
 
 ```typescript
-// BUG: delay() without args is instant in Node.js
+// BUG: 无参数的 delay() 在 Node.js 中是立即的
 http.get('/api/data', async () => {
-  await delay() // No-op in Node.js — resolves immediately
+  await delay() // 在 Node.js 中无操作 — 立即解析
   return HttpResponse.json({ data: 'loaded' })
 })
 
-// Test expects loading state but never sees it
-test('shows loading spinner', async () => {
+// 测试期望看到加载状态但从未看到
+test('显示加载指示器', async () => {
   render(<DataLoader />)
-  // Loading spinner never appears because response is instant
-  expect(screen.getByRole('progressbar')).toBeInTheDocument() // FAILS
+  // 加载指示器永远不会出现，因为响应是立即的
+  expect(screen.getByRole('progressbar')).toBeInTheDocument() // 失败
 })
 ```
 
-## Correct
+## 正确示例
 
 ```typescript
 http.get('/api/data', async () => {
-  await delay(200) // Explicit: always waits 200ms, even in Node.js
+  await delay(200) // 明确：总是等待 200ms，即使在 Node.js 中
   return HttpResponse.json({ data: 'loaded' })
 })
 
-// For testing timeouts:
+// 用于测试超时：
 http.get('/api/slow', async () => {
-  await delay('infinite') // Never resolves — tests timeout handling
+  await delay('infinite') // 永不解析 — 测试超时处理
   return HttpResponse.json({ data: 'never reached' })
 })
 ```
 
-## Delay Behavior by Environment
+## 不同环境下的延迟行为
 
-| Usage | Browser | Node.js | Recommendation |
+| 用法 | 浏览器 | Node.js | 推荐 |
 |-------|---------|---------|----------------|
-| `delay()` | Random realistic delay | Instant (negated) | Avoid in tests |
-| `delay(ms)` | Waits `ms` | Waits `ms` | Use in tests |
-| `delay('real')` | Random realistic delay | Random realistic delay | Simulating real latency |
-| `delay('infinite')` | Never resolves | Never resolves | Testing timeouts |
+| `delay()` | 随机真实延迟 | 立即（被取消） | 在测试中避免使用 |
+| `delay(ms)` | 等待 `ms` 毫秒 | 等待 `ms` 毫秒 | 在测试中使用 |
+| `delay('real')` | 随机真实延迟 | 随机真实延迟 | 模拟真实延迟 |
+| `delay('infinite')` | 永不解析 | 永不解析 | 测试超时 |
 
-## Why
+## 原因
 
-The no-argument `delay()` is designed for browser mocking where you want realistic-feeling latency without slowing down tests. In Node.js test environments, it's negated to keep tests fast. If your test depends on a delay (e.g., testing loading states), always specify explicit milliseconds.
+无参数的 `delay()` 设计用于浏览器模拟，您希望在测试中保持快速的同时获得真实的延迟感。在 Node.js 测试环境中，它被取消以保持测试速度。如果您的测试依赖于延迟（例如，测试加载状态），请始终指定明确的毫秒数。

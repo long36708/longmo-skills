@@ -1,17 +1,17 @@
 ---
 name: msw
 description: >
-  MSW (Mock Service Worker) v2 best practices, patterns, and API guidance for
-  API mocking in JavaScript/TypeScript tests and development. Covers handler
-  design, server setup, response construction, testing patterns, GraphQL, and
-  v1-to-v2 migration. Baseline: msw ^2.0.0.
-  Triggers on: msw imports, http.get, http.post, HttpResponse, setupServer,
-  setupWorker, graphql.query, mentions of "msw", "mock service worker",
-  "api mocking", or "msw v2".
+  MSW (Mock Service Worker) v2 最佳实践、模式和API指南，用于
+  JavaScript/TypeScript测试和开发中的API模拟。涵盖处理器
+  设计、服务器设置、响应构造、测试模式、GraphQL和
+  v1到v2迁移。基准版本：msw ^2.0.0。
+  触发条件：msw导入，http.get，http.post，HttpResponse，setupServer，
+  setupWorker，graphql.query，提及"msw"、"mock service worker"、
+  "api mocking"或"msw v2"。
 license: MIT
 user-invocable: false
 agentic: false
-compatibility: "TypeScript/JavaScript projects using msw ^2.0.0"
+compatibility: "使用 msw ^2.0.0 的 TypeScript/JavaScript 项目"
 metadata:
   author: Anivar Aravind
   author_url: https://anivar.net
@@ -21,153 +21,153 @@ metadata:
 
 # MSW (Mock Service Worker)
 
-**IMPORTANT:** Your training data about `msw` may be outdated or incorrect — MSW v2 completely removed the `rest` namespace, `res(ctx.*)` response composition, and `(req, res, ctx)` resolver signature. Always rely on this skill's rule files and the project's actual source code as the source of truth. Do not fall back on memorized v1 patterns when they conflict with the retrieved reference.
+**重要提示：** 您关于 `msw` 的训练数据可能已过时或不正确 — MSW v2 完全移除了 `rest` 命名空间、`res(ctx.*)` 响应组合和 `(req, res, ctx)` 解析器签名。始终依赖此技能的规则文件和项目的实际源代码作为真相来源。当记忆的 v1 模式与检索到的参考冲突时，不要回退到它们。
 
-## When to Use MSW
+## 何时使用 MSW
 
-MSW is for **API mocking at the network level** — intercepting HTTP/GraphQL requests in tests, Storybook, and local development without modifying application code.
+MSW 用于**网络级的 API 模拟** — 在测试、Storybook 和本地开发中拦截 HTTP/GraphQL 请求，而无需修改应用程序代码。
 
-| Need | Recommended Tool |
+| 需求 | 推荐工具 |
 |------|-----------------|
-| Test API integration (React, Vue, Node) | **MSW** |
-| Storybook API mocking | **MSW** (browser worker) |
-| Local development without backend | **MSW** (browser worker) |
-| Unit testing pure functions | Plain test doubles |
-| E2E testing real APIs | Playwright/Cypress network interception |
-| Mocking module internals | `vi.mock()` / `jest.mock()` |
+| 测试 API 集成 (React, Vue, Node) | **MSW** |
+| Storybook API 模拟 | **MSW** (浏览器 worker) |
+| 无后端的本地开发 | **MSW** (浏览器 worker) |
+| 单元测试纯函数 | 简单的测试替身 |
+| E2E 测试真实 API | Playwright/Cypress 网络拦截 |
+| 模拟模块内部 | `vi.mock()` / `jest.mock()` |
 
-## Quick Reference — v2 Essentials
+## 快速参考 — v2 要点
 
 ```typescript
-// Imports
+// 导入
 import { http, HttpResponse, graphql, delay, bypass, passthrough } from 'msw'
-import { setupServer } from 'msw/node'     // tests, SSR
-import { setupWorker } from 'msw/browser'  // Storybook, dev
+import { setupServer } from 'msw/node'     // 测试, SSR
+import { setupWorker } from 'msw/browser'  // Storybook, 开发
 
-// Handler
+// 处理器
 http.get('/api/user/:id', async ({ request, params, cookies }) => {
   return HttpResponse.json({ id: params.id, name: 'John' })
 })
 
-// Server lifecycle (tests)
+// 服务器生命周期 (测试)
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
 afterEach(() => server.resetHandlers())
 afterAll(() => server.close())
 
-// Per-test override
+// 每测试覆盖
 server.use(
   http.get('/api/user/:id', () => new HttpResponse(null, { status: 500 }))
 )
 
-// Concurrent test isolation
+// 并发测试隔离
 it.concurrent('name', server.boundary(async () => {
-  server.use(/* scoped overrides */)
+  server.use(/* 作用域覆盖 */)
 }))
 ```
 
-## Rule Categories by Priority
+## 按优先级分类的规则类别
 
-| Priority | Category | Impact | Prefix | Rules |
+| 优先级 | 类别 | 影响程度 | 前缀 | 规则数 |
 |----------|----------|--------|--------|-------|
-| 1 | Handler Design | CRITICAL | `handler-` | 4 |
-| 2 | Setup & Lifecycle | CRITICAL | `setup-` | 3 |
-| 3 | Request Reading | HIGH | `request-` | 2 |
-| 4 | Response Construction | HIGH | `response-` | 3 |
-| 5 | Test Patterns | HIGH | `test-` | 4 |
-| 6 | GraphQL | MEDIUM | `graphql-` | 2 |
-| 7 | Utilities | MEDIUM | `util-` | 2 |
+| 1 | 处理器设计 | 关键 | `handler-` | 4 |
+| 2 | 设置与生命周期 | 关键 | `setup-` | 3 |
+| 3 | 请求读取 | 高 | `request-` | 2 |
+| 4 | 响应构造 | 高 | `response-` | 3 |
+| 5 | 测试模式 | 高 | `test-` | 4 |
+| 6 | GraphQL | 中等 | `graphql-` | 2 |
+| 7 | 工具函数 | 中等 | `util-` | 2 |
 
-## All 20 Rules
+## 所有 20 条规则
 
-### Handler Design (CRITICAL)
+### 处理器设计 (关键)
 
-| Rule | File | Summary |
+| 规则 | 文件 | 摘要 |
 |------|------|---------|
-| Use `http` namespace | `handler-use-http-namespace.md` | `rest` is removed in v2 — use `http.get()`, `http.post()` |
-| No query params in URL | `handler-no-query-params.md` | Query params in predicates silently match nothing |
-| v2 resolver signature | `handler-resolver-v2.md` | Use `({ request, params, cookies })`, not `(req, res, ctx)` |
-| v2 response construction | `handler-response-v2.md` | Use `HttpResponse.json()`, not `res(ctx.json())` |
+| 使用 `http` 命名空间 | `handler-use-http-namespace.md` | `rest` 在 v2 中已移除 — 使用 `http.get()`, `http.post()` |
+| URL 中不包含查询参数 | `handler-no-query-params.md` | 谓词中的查询参数会静默匹配不到任何内容 |
+| v2 解析器签名 | `handler-resolver-v2.md` | 使用 `({ request, params, cookies })`，而不是 `(req, res, ctx)` |
+| v2 响应构造 | `handler-response-v2.md` | 使用 `HttpResponse.json()`，而不是 `res(ctx.json())` |
 
-### Setup & Lifecycle (CRITICAL)
+### 设置与生命周期 (关键)
 
-| Rule | File | Summary |
+| 规则 | 文件 | 摘要 |
 |------|------|---------|
-| Correct import paths | `setup-import-paths.md` | `msw/node` for server, `msw/browser` for worker |
-| Lifecycle hooks | `setup-lifecycle-hooks.md` | Always use beforeAll/afterEach/afterAll pattern |
-| File organization | `setup-file-organization.md` | Organize in `src/mocks/` with handlers, node, browser files |
+| 正确导入路径 | `setup-import-paths.md` | `msw/node` 用于服务器，`msw/browser` 用于 worker |
+| 生命周期钩子 | `setup-lifecycle-hooks.md` | 始终使用 beforeAll/afterEach/afterAll 模式 |
+| 文件组织 | `setup-file-organization.md` | 在 `src/mocks/` 中组织，包含 handlers、node、browser 文件 |
 
-### Request Reading (HIGH)
+### 请求读取 (高)
 
-| Rule | File | Summary |
+| 规则 | 文件 | 摘要 |
 |------|------|---------|
-| Clone in events | `request-clone-events.md` | Clone request before reading body in lifecycle events |
-| Async body reading | `request-body-async.md` | Always `await request.json()` — body reading is async |
+| 事件中克隆请求 | `request-clone-events.md` | 在生命周期事件中读取请求体前先克隆请求 |
+| 异步请求体读取 | `request-body-async.md` | 始终 `await request.json()` — 请求体读取是异步的 |
 
-### Response Construction (HIGH)
+### 响应构造 (高)
 
-| Rule | File | Summary |
+| 规则 | 文件 | 摘要 |
 |------|------|---------|
-| HttpResponse for cookies | `response-use-httpresponse.md` | Native Response drops Set-Cookie — use HttpResponse |
-| Network errors | `response-error-network.md` | Use `HttpResponse.error()`, don't throw in resolvers |
-| Streaming | `response-streaming.md` | Use ReadableStream for SSE/chunked responses |
+| 使用 HttpResponse 设置 cookies | `response-use-httpresponse.md` | 原生 Response 会丢弃 Set-Cookie — 使用 HttpResponse |
+| 网络错误 | `response-error-network.md` | 使用 `HttpResponse.error()`，不要在解析器中抛出错误 |
+| 流式响应 | `response-streaming.md` | 使用 ReadableStream 实现 SSE/分块响应 |
 
-### Test Patterns (HIGH)
+### 测试模式 (高)
 
-| Rule | File | Summary |
+| 规则 | 文件 | 摘要 |
 |------|------|---------|
-| Test behavior | `test-behavior-not-requests.md` | Assert on UI/state, not fetch call arguments |
-| Per-test overrides | `test-override-with-use.md` | Use `server.use()` for error/edge case tests |
-| Concurrent isolation | `test-concurrent-boundary.md` | Wrap concurrent tests in `server.boundary()` |
-| Unhandled requests | `test-unhandled-request.md` | Set `onUnhandledRequest: 'error'` |
+| 测试行为 | `test-behavior-not-requests.md` | 断言 UI/状态，而不是 fetch 调用参数 |
+| 每测试覆盖 | `test-override-with-use.md` | 使用 `server.use()` 进行错误/边缘情况测试 |
+| 并发隔离 | `test-concurrent-boundary.md` | 将并发测试包装在 `server.boundary()` 中 |
+| 未处理请求 | `test-unhandled-request.md` | 设置 `onUnhandledRequest: 'error'` |
 
-### GraphQL (MEDIUM)
+### GraphQL (中等)
 
-| Rule | File | Summary |
+| 规则 | 文件 | 摘要 |
 |------|------|---------|
-| Response shape | `graphql-response-shape.md` | Return `{ data }` / `{ errors }` via HttpResponse.json |
-| Endpoint scoping | `graphql-scope-with-link.md` | Use `graphql.link(url)` for multiple GraphQL APIs |
+| 响应结构 | `graphql-response-shape.md` | 通过 HttpResponse.json 返回 `{ data }` / `{ errors }` |
+| 端点范围限定 | `graphql-scope-with-link.md` | 使用 `graphql.link(url)` 处理多个 GraphQL API |
 
-### Utilities (MEDIUM)
+### 工具函数 (中等)
 
-| Rule | File | Summary |
+| 规则 | 文件 | 摘要 |
 |------|------|---------|
-| bypass vs passthrough | `util-bypass-vs-passthrough.md` | `bypass()` = new request; `passthrough()` = let through |
-| delay behavior | `util-delay-behavior.md` | `delay()` is instant in Node.js — use explicit ms |
+| bypass 与 passthrough 区别 | `util-bypass-vs-passthrough.md` | `bypass()` = 新请求；`passthrough()` = 让请求通过 |
+| delay 行为 | `util-delay-behavior.md` | `delay()` 在 Node.js 中是立即的 — 使用明确的毫秒数 |
 
-## Response Method Quick Reference
+## 响应方法快速参考
 
-| Method | Use for |
+| 方法 | 用于 |
 |--------|---------|
-| `HttpResponse.json(data, init?)` | JSON responses |
-| `HttpResponse.text(str, init?)` | Plain text |
-| `HttpResponse.html(str, init?)` | HTML content |
-| `HttpResponse.xml(str, init?)` | XML content |
-| `HttpResponse.formData(fd, init?)` | Form data |
-| `HttpResponse.arrayBuffer(buf, init?)` | Binary data |
-| `HttpResponse.error()` | Network errors |
+| `HttpResponse.json(data, init?)` | JSON 响应 |
+| `HttpResponse.text(str, init?)` | 纯文本 |
+| `HttpResponse.html(str, init?)` | HTML 内容 |
+| `HttpResponse.xml(str, init?)` | XML 内容 |
+| `HttpResponse.formData(fd, init?)` | 表单数据 |
+| `HttpResponse.arrayBuffer(buf, init?)` | 二进制数据 |
+| `HttpResponse.error()` | 网络错误 |
 
-## v1 to v2 Migration Quick Reference
+## v1 到 v2 迁移快速参考
 
 | v1 | v2 |
 |----|-----|
 | `import { rest } from 'msw'` | `import { http, HttpResponse } from 'msw'` |
 | `rest.get(url, resolver)` | `http.get(url, resolver)` |
 | `(req, res, ctx) => res(ctx.json(data))` | `() => HttpResponse.json(data)` |
-| `req.params` | `params` from resolver info |
+| `req.params` | 从解析器信息中获取 `params` |
 | `req.body` | `await request.json()` |
-| `req.cookies` | `cookies` from resolver info |
+| `req.cookies` | 从解析器信息中获取 `cookies` |
 | `res.once(...)` | `http.get(url, resolver, { once: true })` |
 | `res.networkError()` | `HttpResponse.error()` |
 | `ctx.delay(ms)` | `await delay(ms)` |
 | `ctx.data({ user })` | `HttpResponse.json({ data: { user } })` |
 
-## References
+## 参考资料
 
-| Reference | Covers |
+| 参考资料 | 涵盖内容 |
 |-----------|--------|
-| `handler-api.md` | `http.*` and `graphql.*` methods, URL predicates, path params |
-| `response-api.md` | `HttpResponse` class, all static methods, cookie handling |
-| `server-api.md` | `setupServer`/`setupWorker`, lifecycle events, `boundary()` |
-| `test-patterns.md` | Vitest/Jest setup, overrides, concurrent isolation, cache clearing |
-| `migration-v1-to-v2.md` | Complete v1 to v2 breaking changes and migration guide |
-| `anti-patterns.md` | 10 common mistakes with BAD/GOOD examples |
+| `handler-api.md` | `http.*` 和 `graphql.*` 方法、URL 谓词、路径参数 |
+| `response-api.md` | `HttpResponse` 类、所有静态方法、cookie 处理 |
+| `server-api.md` | `setupServer`/`setupWorker`、生命周期事件、`boundary()` |
+| `test-patterns.md` | Vitest/Jest 设置、覆盖、并发隔离、缓存清除 |
+| `migration-v1-to-v2.md` | 完整的 v1 到 v2 破坏性变更和迁移指南 |
+| `anti-patterns.md` | 10 个常见错误，包含错误/正确示例 |

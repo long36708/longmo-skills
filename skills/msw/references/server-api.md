@@ -1,13 +1,13 @@
-# Server API Reference
+# Server API 参考
 
-## Table of Contents
+## 目录
 
 - [setupServer](#setupserver-nodejs)
 - [setupWorker](#setupworker-browser)
-- [Server Methods](#server-methods)
-- [Worker Methods](#worker-methods)
-- [Lifecycle Events](#lifecycle-events)
-- [onUnhandledRequest Strategies](#onunhandledrequest-strategies)
+- [Server 方法](#server-方法)
+- [Worker 方法](#worker-方法)
+- [生命周期事件](#生命周期事件)
+- [onUnhandledRequest 策略](#onunhandledrequest-策略)
 - [server.boundary()](#serverboundary)
 
 ## setupServer (Node.js)
@@ -19,7 +19,7 @@ import { handlers } from './handlers'
 const server = setupServer(...handlers)
 ```
 
-Used for Node.js environments: test runners (Vitest, Jest), scripts, and server-side applications.
+用于 Node.js 环境：测试运行器（Vitest、Jest）、脚本和服务器端应用程序。
 
 ## setupWorker (Browser)
 
@@ -30,27 +30,27 @@ import { handlers } from './handlers'
 const worker = setupWorker(...handlers)
 ```
 
-Used for browser environments: development servers, Storybook, browser-based tests.
+用于浏览器环境：开发服务器、Storybook、基于浏览器的测试。
 
-## Server Methods
+## Server 方法
 
-| Method | Description |
+| 方法 | 描述 |
 |--------|-------------|
-| `.listen(options?)` | Start intercepting requests |
-| `.close()` | Stop intercepting, clean up |
-| `.use(...handlers)` | Prepend runtime handlers (override) |
-| `.resetHandlers(...handlers?)` | Remove runtime handlers, optionally replace initial handlers |
-| `.restoreHandlers()` | Mark used one-time handlers as unused again |
-| `.listHandlers()` | Return array of all active handlers |
-| `.boundary(callback)` | Create isolated handler scope for concurrent tests |
-| `.events` | EventEmitter for lifecycle events |
+| `.listen(options?)` | 开始拦截请求 |
+| `.close()` | 停止拦截，清理 |
+| `.use(...handlers)` | 前置运行时处理器（重写） |
+| `.resetHandlers(...handlers?)` | 移除运行时处理器，可选替换初始处理器 |
+| `.restoreHandlers()` | 将已使用的一次性处理器标记为未使用 |
+| `.listHandlers()` | 返回所有活动处理器的数组 |
+| `.boundary(callback)` | 为并发测试创建隔离的处理器作用域 |
+| `.events` | 生命周期事件的 EventEmitter |
 
 ### .listen()
 
 ```typescript
 server.listen()
 
-// With options
+// 带选项
 server.listen({
   onUnhandledRequest: 'error',
 })
@@ -64,7 +64,7 @@ server.close()
 
 ### .use()
 
-Prepends runtime handlers that take priority over initial handlers:
+前置运行时处理器，优先于初始处理器：
 
 ```typescript
 server.use(
@@ -72,15 +72,15 @@ server.use(
 )
 ```
 
-Runtime handlers are checked first (most recently added wins). They are removed by `resetHandlers()`.
+运行时处理器首先检查（最近添加的获胜）。它们会被 `resetHandlers()` 移除。
 
 ### .resetHandlers()
 
 ```typescript
-// Remove all runtime handlers, keep initial handlers
+// 移除所有运行时处理器，保留初始处理器
 server.resetHandlers()
 
-// Replace initial handlers entirely
+// 完全替换初始处理器
 server.resetHandlers(
   http.get('/api/user', () => HttpResponse.json({ name: 'New default' }))
 )
@@ -88,7 +88,7 @@ server.resetHandlers(
 
 ### .restoreHandlers()
 
-Restores one-time handlers that have already been used so they can fire again:
+恢复已使用的一次性处理器，使其可以再次触发：
 
 ```typescript
 server.restoreHandlers()
@@ -101,29 +101,29 @@ const handlers = server.listHandlers()
 console.log(handlers.length)
 ```
 
-## Worker Methods
+## Worker 方法
 
-| Method | Description |
+| 方法 | 描述 |
 |--------|-------------|
-| `.start(options?)` | Register service worker, start intercepting |
-| `.stop()` | Unregister service worker, stop intercepting |
-| `.use(...handlers)` | Same as server |
-| `.resetHandlers()` | Same as server |
-| `.restoreHandlers()` | Same as server |
-| `.listHandlers()` | Same as server |
+| `.start(options?)` | 注册服务工作者，开始拦截 |
+| `.stop()` | 注销服务工作者，停止拦截 |
+| `.use(...handlers)` | 与 server 相同 |
+| `.resetHandlers()` | 与 server 相同 |
+| `.restoreHandlers()` | 与 server 相同 |
+| `.listHandlers()` | 与 server 相同 |
 
 ### .start()
 
 ```typescript
 await worker.start()
 
-// With options
+// 带选项
 await worker.start({
   onUnhandledRequest: 'error',
   serviceWorker: {
     url: '/mockServiceWorker.js',
   },
-  quiet: true, // suppress "[MSW] Mocking enabled" console message
+  quiet: true, // 抑制 "[MSW] Mocking enabled" 控制台消息
 })
 ```
 
@@ -133,51 +133,51 @@ await worker.start({
 worker.stop()
 ```
 
-## Lifecycle Events
+## 生命周期事件
 
-7 event types available on `server.events` / `worker.events`:
+`server.events` / `worker.events` 上可用的 7 种事件类型：
 
-| Event | Payload | Description |
+| 事件 | 负载 | 描述 |
 |-------|---------|-------------|
-| `request:start` | `{ request, requestId }` | Request intercepted |
-| `request:match` | `{ request, requestId }` | Handler found |
-| `request:unhandled` | `{ request, requestId }` | No handler found |
-| `request:end` | `{ request, requestId }` | Request processing done |
-| `response:mocked` | `{ request, requestId, response }` | Mocked response sent |
-| `response:bypass` | `{ request, requestId, response }` | Real response received |
-| `unhandledException` | `{ request, requestId, error }` | Handler threw error |
+| `request:start` | `{ request, requestId }` | 请求被拦截 |
+| `request:match` | `{ request, requestId }` | 找到处理器 |
+| `request:unhandled` | `{ request, requestId }` | 未找到处理器 |
+| `request:end` | `{ request, requestId }` | 请求处理完成 |
+| `response:mocked` | `{ request, requestId, response }` | 发送模拟响应 |
+| `response:bypass` | `{ request, requestId, response }` | 收到真实响应 |
+| `unhandledException` | `{ request, requestId, error }` | 处理器抛出错误 |
 
-### Subscribing to events
+### 订阅事件
 
 ```typescript
 server.events.on('request:start', ({ request, requestId }) => {
-  console.log('Intercepted:', request.method, request.url)
+  console.log('已拦截:', request.method, request.url)
 })
 
 server.events.on('response:mocked', ({ request, response }) => {
-  console.log('Mocked:', request.url, response.status)
+  console.log('已模拟:', request.url, response.status)
 })
 
 server.events.on('unhandledException', ({ request, error }) => {
-  console.error('Handler error for', request.url, error)
+  console.error('处理器错误:', request.url, error)
 })
 ```
 
-### Clone before reading body
+### 读取体前先克隆
 
 ```typescript
-// BAD: consumes the request body, breaking downstream handlers
+// 错误：消耗请求体，破坏下游处理器
 server.events.on('request:start', async ({ request }) => {
   const body = await request.json()
 })
 
-// GOOD: clone before reading
+// 正确：读取前先克隆
 server.events.on('request:start', async ({ request }) => {
   const body = await request.clone().json()
 })
 ```
 
-### Removing event listeners
+### 移除事件监听器
 
 ```typescript
 const listener = ({ request }) => {
@@ -187,45 +187,45 @@ const listener = ({ request }) => {
 server.events.on('request:start', listener)
 server.events.removeListener('request:start', listener)
 
-// Or remove all listeners
+// 或移除所有监听器
 server.events.removeAllListeners()
 ```
 
-## onUnhandledRequest Strategies
+## onUnhandledRequest 策略
 
-| Strategy | Behavior |
+| 策略 | 行为 |
 |----------|----------|
-| `'warn'` (default) | Console warning, request passes through |
-| `'error'` | Throws error, fails test |
-| `'bypass'` | Silent, request passes through |
-| Custom function | Conditional handling |
+| `'warn'`（默认） | 控制台警告，请求通过 |
+| `'error'` | 抛出错误，测试失败 |
+| `'bypass'` | 静默，请求通过 |
+| 自定义函数 | 条件处理 |
 
-### Built-in strategies
+### 内置策略
 
 ```typescript
-server.listen({ onUnhandledRequest: 'warn' })   // default
-server.listen({ onUnhandledRequest: 'error' })   // recommended for tests
-server.listen({ onUnhandledRequest: 'bypass' })  // silent passthrough
+server.listen({ onUnhandledRequest: 'warn' })   // 默认
+server.listen({ onUnhandledRequest: 'error' })   // 推荐用于测试
+server.listen({ onUnhandledRequest: 'bypass' })  // 静默通过
 ```
 
-### Custom strategy
+### 自定义策略
 
 ```typescript
 server.listen({
   onUnhandledRequest(request, print) {
     const url = new URL(request.url)
 
-    // Ignore specific paths
+    // 忽略特定路径
     if (url.pathname.startsWith('/assets/')) {
       return
     }
 
-    // Ignore specific hosts
+    // 忽略特定主机
     if (url.hostname === 'cdn.example.com') {
       return
     }
 
-    // Error on everything else
+    // 其他所有情况都报错
     print.error()
   },
 })
@@ -233,33 +233,33 @@ server.listen({
 
 ## server.boundary()
 
-Isolates handler scope for parallel execution. Handlers added via `server.use()` inside a boundary are only visible within that boundary's execution context.
+为并行执行隔离处理器作用域。在边界内通过 `server.use()` 添加的处理器仅在该边界的执行上下文中可见。
 
 ```typescript
 const isolated = server.boundary(async () => {
   server.use(
     http.get('/api/user', () => HttpResponse.json({ role: 'admin' }))
   )
-  // This override is only visible within this boundary
+  // 此重写仅在此边界内可见
 })
 
 await isolated()
 ```
 
-### Use with concurrent tests
+### 与并发测试一起使用
 
 ```typescript
 it.concurrent('admin flow', server.boundary(async () => {
   server.use(
     http.get('/api/me', () => HttpResponse.json({ role: 'admin' }))
   )
-  // Only this test sees the admin override
+  // 仅此测试看到 admin 重写
 }))
 
 it.concurrent('guest flow', server.boundary(async () => {
   server.use(
     http.get('/api/me', () => HttpResponse.json({ role: 'guest' }))
   )
-  // Only this test sees the guest override
+  // 仅此测试看到 guest 重写
 }))
 ```

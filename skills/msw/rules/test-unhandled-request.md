@@ -1,28 +1,28 @@
 ---
-title: Set `onUnhandledRequest: 'error'` to Catch Missing Handlers
+title: 设置 `onUnhandledRequest: 'error'` 以捕获缺失的处理器
 impact: HIGH
-description: Configure the server to throw on unhandled requests so missing handlers fail tests loudly instead of silently passing through.
+description: 配置服务器在未处理的请求上抛出错误，以便缺失的处理器使测试大声失败，而不是静默通过。
 tags: testing, unhandled, error, configuration, strictness
 ---
 
-# Set `onUnhandledRequest: 'error'`
+# 设置 `onUnhandledRequest: 'error'`
 
-## Problem
+## 问题
 
-The default `onUnhandledRequest` behavior is `'warn'` — unexpected requests print a warning but silently pass through to the actual network. Tests pass even though a handler is missing.
+默认的 `onUnhandledRequest` 行为是 `'warn'` — 意外的请求打印警告但静默传递到实际网络。即使处理器缺失，测试也会通过。
 
-## Incorrect
+## 错误示例
 
 ```typescript
-// Default: unhandled requests produce a console warning and pass through
+// 默认：未处理的请求产生控制台警告并传递通过
 const server = setupServer(...handlers)
-server.listen() // default: { onUnhandledRequest: 'warn' }
+server.listen() // 默认：{ onUnhandledRequest: 'warn' }
 
-// If you forget a handler for /api/settings, the test silently
-// hits the real API (or fails with a network error, not a clear message)
+// 如果您忘记为 /api/settings 添加处理器，测试会静默地
+// 命中真实 API（或由于网络错误而失败，而不是清晰的消息）
 ```
 
-## Correct
+## 正确示例
 
 ```typescript
 const server = setupServer(...handlers)
@@ -31,21 +31,21 @@ beforeAll(() => {
   server.listen({ onUnhandledRequest: 'error' })
 })
 
-// Now a missing handler throws:
+// 现在缺失的处理器会抛出：
 // [MSW] Error: intercepted a request without a matching request handler:
 //   GET /api/settings
-// This fails the test immediately with a clear error message.
+// 这会立即使测试失败，并显示清晰的错误消息。
 ```
 
-## Options
+## 选项
 
-| Strategy | Behavior |
+| 策略 | 行为 |
 |----------|----------|
-| `'warn'` (default) | Console warning, request passes through |
-| `'error'` | Throws error, test fails |
-| `'bypass'` | Silent, request passes through |
-| `(request) => {}` | Custom function for conditional handling |
+| `'warn'` (默认) | 控制台警告，请求传递通过 |
+| `'error'` | 抛出错误，测试失败 |
+| `'bypass'` | 静默，请求传递通过 |
+| `(request) => {}` | 用于条件处理的自定义函数 |
 
-## Why
+## 原因
 
-`onUnhandledRequest: 'error'` turns missing handlers into immediate test failures with clear error messages. This catches typos in URLs, forgotten handlers for new endpoints, and accidental real network requests during testing.
+`onUnhandledRequest: 'error'` 将缺失的处理器转换为具有清晰错误消息的立即测试失败。这会捕获 URL 中的拼写错误、忘记为新端点添加处理器以及测试期间意外的真实网络请求。

@@ -1,20 +1,20 @@
 ---
-title: Use `HttpResponse` Static Methods Instead of `res(ctx.*)`
+title: 使用 `HttpResponse` 静态方法替代 `res(ctx.*)`
 impact: CRITICAL
-description: v2 uses `HttpResponse.json()`, `HttpResponse.text()`, etc. The `res` and `ctx` helpers are removed.
+description: v2 使用 `HttpResponse.json()`、`HttpResponse.text()` 等方法。`res` 和 `ctx` 辅助函数已被移除。
 tags: handler, response, HttpResponse, ctx, res, v2, migration
 ---
 
-# Use `HttpResponse` Static Methods Instead of `res(ctx.*)`
+# 使用 `HttpResponse` 静态方法替代 `res(ctx.*)`
 
-## Problem
+## 问题
 
-v1 response composition `res(ctx.status(200), ctx.json(...))` doesn't exist in v2. Responses are now standard Response objects constructed via `HttpResponse`.
+v1 的响应组合 `res(ctx.status(200), ctx.json(...))` 在 v2 中不存在。响应现在是通过 `HttpResponse` 构造的标准 Response 对象。
 
-## Incorrect
+## 错误示例
 
 ```typescript
-// BUG: res() and ctx are removed in v2
+// BUG: res() 和 ctx 在 v2 中被移除
 http.get('/api/user', (req, res, ctx) => {
   return res(
     ctx.status(200),
@@ -24,7 +24,7 @@ http.get('/api/user', (req, res, ctx) => {
 })
 ```
 
-## Correct
+## 正确示例
 
 ```typescript
 http.get('/api/user', () => {
@@ -38,9 +38,9 @@ http.get('/api/user', () => {
 })
 ```
 
-## v1 to v2 Response Mapping
+## v1 到 v2 响应映射
 
-| v1 Pattern | v2 Equivalent |
+| v1 模式 | v2 等效方式 |
 |-----------|---------------|
 | `res(ctx.json(data))` | `HttpResponse.json(data)` |
 | `res(ctx.text(str))` | `HttpResponse.text(str)` |
@@ -52,6 +52,6 @@ http.get('/api/user', () => {
 | `res.networkError(msg)` | `HttpResponse.error()` |
 | `res.once(...)` | `http.get(url, resolver, { once: true })` |
 
-## Why
+## 原因
 
-v2 aligns with the Fetch API standard. `HttpResponse` extends the native `Response` class, making mock responses consistent with real responses and enabling features like `Set-Cookie` header support.
+v2 与 Fetch API 标准对齐。`HttpResponse` 扩展了原生的 `Response` 类，使模拟响应与实际响应保持一致，并支持诸如 `Set-Cookie` 头等功能。

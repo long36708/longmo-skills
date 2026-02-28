@@ -1,34 +1,34 @@
 ---
-title: Use `HttpResponse.error()` for Network Failures
+title: 使用 `HttpResponse.error()` 模拟网络故障
 impact: HIGH
-description: Simulate network errors with `HttpResponse.error()`, not by throwing inside resolvers.
+description: 使用 `HttpResponse.error()` 模拟网络错误，而不是在解析器中抛出错误。
 tags: response, error, network, HttpResponse.error
 ---
 
-# Use `HttpResponse.error()` for Network Failures
+# 使用 `HttpResponse.error()` 模拟网络故障
 
-## Problem
+## 问题
 
-Throwing an error inside a resolver doesn't simulate a network failure — it crashes the handler. Use `HttpResponse.error()` which produces a `TypeError: Failed to fetch` on the client side.
+在解析器中抛出错误不会模拟网络故障 — 它会崩溃处理器。使用 `HttpResponse.error()`，它会在客户端产生 `TypeError: Failed to fetch`。
 
-## Incorrect
+## 错误示例
 
 ```typescript
-// BUG: throwing crashes the handler — client gets unhandled error, not a network failure
+// BUG: 抛出错误会崩溃处理器 — 客户端得到未处理的错误，而不是网络故障
 http.get('/api/data', () => {
   throw new Error('Network failure')
 })
 ```
 
-## Correct
+## 正确示例
 
 ```typescript
-// Simulates a network error (TypeError: Failed to fetch)
+// 模拟网络错误 (TypeError: Failed to fetch)
 http.get('/api/data', () => {
   return HttpResponse.error()
 })
 ```
 
-## Why
+## 原因
 
-`HttpResponse.error()` creates a `Response` with `type: "error"`, which the Fetch API translates to a `TypeError: Failed to fetch`. This is what applications actually see during real network failures (DNS errors, connection refused, etc.). Throwing inside a resolver is an unhandled exception in MSW internals.
+`HttpResponse.error()` 创建一个 `type: "error"` 的 `Response`，Fetch API 会将其转换为 `TypeError: Failed to fetch`。这是应用程序在实际网络故障（DNS 错误、连接被拒绝等）期间真正看到的内容。在解析器中抛出错误是 MSW 内部的未处理异常。

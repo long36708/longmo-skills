@@ -1,30 +1,30 @@
-# Handler API Reference
+# Handler API 参考
 
-## Table of Contents
+## 目录
 
-- [HTTP Handlers](#http-handlers)
-- [GraphQL Handlers](#graphql-handlers)
-- [URL Predicates](#url-predicates)
-- [Path Parameters](#path-parameters)
-- [Handler Options](#handler-options)
-- [matchRequestUrl Utility](#matchrequesturl-utility)
+- [HTTP 处理器](#http-处理器)
+- [GraphQL 处理器](#graphql-处理器)
+- [URL 谓词](#url-谓词)
+- [路径参数](#路径参数)
+- [处理器选项](#处理器选项)
+- [matchRequestUrl 工具函数](#matchrequesturl-工具函数)
 
-## HTTP Handlers
+## HTTP 处理器
 
-All methods on the `http` namespace:
+`http` 命名空间上的所有方法：
 
-| Method | Description |
+| 方法 | 描述 |
 |--------|-------------|
-| `http.get(predicate, resolver, options?)` | GET requests |
-| `http.post(predicate, resolver, options?)` | POST requests |
-| `http.put(predicate, resolver, options?)` | PUT requests |
-| `http.patch(predicate, resolver, options?)` | PATCH requests |
-| `http.delete(predicate, resolver, options?)` | DELETE requests |
-| `http.head(predicate, resolver, options?)` | HEAD requests |
-| `http.options(predicate, resolver, options?)` | OPTIONS requests |
-| `http.all(predicate, resolver, options?)` | Any HTTP method |
+| `http.get(predicate, resolver, options?)` | GET 请求 |
+| `http.post(predicate, resolver, options?)` | POST 请求 |
+| `http.put(predicate, resolver, options?)` | PUT 请求 |
+| `http.patch(predicate, resolver, options?)` | PATCH 请求 |
+| `http.delete(predicate, resolver, options?)` | DELETE 请求 |
+| `http.head(predicate, resolver, options?)` | HEAD 请求 |
+| `http.options(predicate, resolver, options?)` | OPTIONS 请求 |
+| `http.all(predicate, resolver, options?)` | 任何 HTTP 方法 |
 
-### Signature
+### 签名
 
 ```typescript
 http.get(
@@ -39,23 +39,23 @@ http.get(
 )
 ```
 
-## GraphQL Handlers
+## GraphQL 处理器
 
-| Method | Description |
+| 方法 | 描述 |
 |--------|-------------|
-| `graphql.query(operationName, resolver)` | GraphQL queries |
-| `graphql.mutation(operationName, resolver)` | GraphQL mutations |
-| `graphql.operation(resolver)` | Any GraphQL operation |
-| `graphql.link(url)` | Scoped namespace for specific endpoint |
+| `graphql.query(operationName, resolver)` | GraphQL 查询 |
+| `graphql.mutation(operationName, resolver)` | GraphQL 变更 |
+| `graphql.operation(resolver)` | 任何 GraphQL 操作 |
+| `graphql.link(url)` | 特定端点的作用域命名空间 |
 
-### GraphQL Resolver Info
+### GraphQL 解析器信息
 
 ```typescript
 graphql.query('GetUser', ({
-  query,           // DocumentNode — parsed GraphQL query
-  variables,       // Record<string, any> — query variables
-  operationName,   // string — operation name
-  request,         // Request — standard Fetch API Request
+  query,           // DocumentNode — 解析后的 GraphQL 查询
+  variables,       // Record<string, any> — 查询变量
+  operationName,   // string — 操作名称
+  request,         // Request — 标准 Fetch API Request
   cookies,         // Record<string, string>
   requestId,       // string
 }) => {
@@ -63,39 +63,39 @@ graphql.query('GetUser', ({
 })
 ```
 
-## URL Predicates
+## URL 谓词
 
-### String — Exact pathname match
+### 字符串 — 精确路径名匹配
 
 ```typescript
 http.get('/api/user', resolver)
 ```
 
-### String with params — Captures path parameters
+### 带参数的字符串 — 捕获路径参数
 
 ```typescript
 http.get('/api/user/:id', resolver)
 ```
 
-### Wildcard — Matches path prefix
+### 通配符 — 匹配路径前缀
 
 ```typescript
-http.get('/api/*', resolver) // matches /api/anything
+http.get('/api/*', resolver) // 匹配 /api/anything
 ```
 
-### Absolute URL — Full URL match
+### 绝对 URL — 完整 URL 匹配
 
 ```typescript
 http.get('https://api.example.com/user', resolver)
 ```
 
-### RegExp — Pattern matching
+### 正则表达式 — 模式匹配
 
 ```typescript
 http.get(/\/api\/user\/\d+/, resolver)
 ```
 
-### Custom function — Programmatic matching
+### 自定义函数 — 编程式匹配
 
 ```typescript
 http.get(
@@ -107,9 +107,9 @@ http.get(
 )
 ```
 
-## Path Parameters
+## 路径参数
 
-### Single parameter
+### 单个参数
 
 ```typescript
 http.get('/user/:id', ({ params }) => {
@@ -118,7 +118,7 @@ http.get('/user/:id', ({ params }) => {
 })
 ```
 
-### Multiple parameters
+### 多个参数
 
 ```typescript
 http.get('/user/:userId/post/:postId', ({ params }) => {
@@ -127,38 +127,38 @@ http.get('/user/:userId/post/:postId', ({ params }) => {
 })
 ```
 
-### Wildcard parameter
+### 通配符参数
 
 ```typescript
 http.get('/files/*', ({ params }) => {
-  const path = params['*'] // everything after /files/
+  const path = params['*'] // /files/ 之后的所有内容
   return HttpResponse.json({ path })
 })
 ```
 
-## Handler Options
+## 处理器选项
 
-### One-time handler
+### 一次性处理器
 
-Automatically removed after the first matching request:
+在第一次匹配请求后自动移除：
 
 ```typescript
 http.get('/api/data', resolver, { once: true })
 ```
 
-Useful for testing retry logic — first request fails, second succeeds:
+对于测试重试逻辑很有用 — 第一次请求失败，第二次成功：
 
 ```typescript
 server.use(
   http.get('/api/data', () => new HttpResponse(null, { status: 500 }), { once: true })
 )
-// First request → 500 (one-time handler consumed)
-// Second request → default handler responds
+// 第一次请求 → 500（一次性处理器已消耗）
+// 第二次请求 → 默认处理器响应
 ```
 
-## matchRequestUrl Utility
+## matchRequestUrl 工具函数
 
-Utility for programmatic URL matching outside of handlers:
+用于在处理器外部进行编程式 URL 匹配的工具函数：
 
 ```typescript
 import { matchRequestUrl } from 'msw'

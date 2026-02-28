@@ -1,20 +1,20 @@
 ---
-title: Use `http` Namespace Instead of `rest`
+title: 使用 `http` 命名空间替代 `rest`
 impact: CRITICAL
-description: MSW v2 replaced `rest` with `http`. The `rest` namespace is removed entirely.
+description: MSW v2 将 `rest` 替换为 `http`。`rest` 命名空间已被完全移除。
 tags: handler, namespace, http, rest, v2, migration
 ---
 
-# Use `http` Namespace Instead of `rest`
+# 使用 `http` 命名空间替代 `rest`
 
-## Problem
+## 问题
 
-AI agents and developers often generate `rest.get()`, `rest.post()` patterns from v1. In v2 the `rest` namespace does not exist — it has been replaced by `http`.
+AI 助手和开发者经常从 v1 生成 `rest.get()`、`rest.post()` 模式。在 v2 中，`rest` 命名空间不存在 — 它已被 `http` 替换。
 
-## Incorrect
+## 错误示例
 
 ```typescript
-// BUG: 'rest' is not exported from 'msw' in v2
+// BUG: 'rest' 在 v2 中不是从 'msw' 导出的
 import { rest } from 'msw'
 
 const handlers = [
@@ -24,7 +24,7 @@ const handlers = [
 ]
 ```
 
-## Correct
+## 正确示例
 
 ```typescript
 import { http, HttpResponse } from 'msw'
@@ -36,6 +36,6 @@ const handlers = [
 ]
 ```
 
-## Why
+## 原因
 
-The `rest` namespace was removed in MSW 2.0. All HTTP request handlers now use the `http` namespace. Using `rest` will produce an import error at build time.
+`rest` 命名空间在 MSW 2.0 中被移除。所有 HTTP 请求处理器现在都使用 `http` 命名空间。使用 `rest` 会在构建时产生导入错误。

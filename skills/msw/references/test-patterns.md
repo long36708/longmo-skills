@@ -1,18 +1,18 @@
-# Test Patterns Reference
+# 测试模式参考
 
-## Table of Contents
+## 目录
 
-- [Setup for Vitest](#setup-for-vitest)
-- [Setup for Jest](#setup-for-jest)
-- [Per-Test Overrides](#per-test-overrides)
-- [Concurrent Test Isolation](#concurrent-test-isolation)
-- [Handler Organization](#handler-organization)
-- [Higher-Order Resolvers](#higher-order-resolvers)
-- [Dynamic Mock Scenarios](#dynamic-mock-scenarios)
-- [Cache Clearing for React Query / SWR / Apollo](#cache-clearing)
-- [Conditional Browser Mocking](#conditional-browser-mocking)
+- [Vitest 设置](#vitest-设置)
+- [Jest 设置](#jest-设置)
+- [每个测试的重写](#每个测试的重写)
+- [并发测试隔离](#并发测试隔离)
+- [处理器组织](#处理器组织)
+- [高阶解析器](#高阶解析器)
+- [动态模拟场景](#动态模拟场景)
+- [React Query / SWR / Apollo 的缓存清除](#缓存清除)
+- [条件性浏览器模拟](#条件性浏览器模拟)
 
-## Setup for Vitest
+## Vitest 设置
 
 ```typescript
 // vitest.setup.ts
@@ -35,7 +35,7 @@ export default defineConfig({
 })
 ```
 
-## Setup for Jest
+## Jest 设置
 
 ```typescript
 // jest.setup.ts
@@ -53,14 +53,14 @@ module.exports = {
 }
 ```
 
-## Per-Test Overrides
+## 每个测试的重写
 
-Use `server.use()` to add handlers that only last until `resetHandlers()` runs in `afterEach`.
+使用 `server.use()` 添加仅在 `afterEach` 中的 `resetHandlers()` 运行之前存在的处理器。
 
-### Override for error state
+### 错误状态的重写
 
 ```typescript
-test('shows error when API fails', async () => {
+test('API 失败时显示错误', async () => {
   server.use(
     http.get('/api/user', () => {
       return new HttpResponse(null, { status: 500 })
@@ -69,32 +69,32 @@ test('shows error when API fails', async () => {
 
   render(<UserProfile />)
   await waitFor(() => {
-    expect(screen.getByText('Something went wrong')).toBeInTheDocument()
+    expect(screen.getByText('出现错误')).toBeInTheDocument()
   })
 })
 ```
 
-### Override for empty state
+### 空状态的重写
 
 ```typescript
-test('shows empty state', async () => {
+test('显示空状态', async () => {
   server.use(
     http.get('/api/posts', () => HttpResponse.json([]))
   )
 
   render(<PostList />)
   await waitFor(() => {
-    expect(screen.getByText('No posts yet')).toBeInTheDocument()
+    expect(screen.getByText('暂无帖子')).toBeInTheDocument()
   })
 })
 ```
 
-### Override for slow response (loading state)
+### 慢响应的重写（加载状态）
 
 ```typescript
 import { delay, http, HttpResponse } from 'msw'
 
-test('shows loading state', async () => {
+test('显示加载状态', async () => {
   server.use(
     http.get('/api/user', async () => {
       await delay('infinite')
@@ -103,60 +103,60 @@ test('shows loading state', async () => {
   )
 
   render(<UserProfile />)
-  expect(screen.getByText('Loading...')).toBeInTheDocument()
+  expect(screen.getByText('加载中...')).toBeInTheDocument()
 })
 ```
 
-### One-time override for retry testing
+### 一次性重写用于重试测试
 
 ```typescript
-test('retries after failure', async () => {
+test('失败后重试', async () => {
   server.use(
-    // First request fails, then handler is consumed
+    // 第一次请求失败，然后处理器被消耗
     http.get('/api/data', () => {
       return new HttpResponse(null, { status: 500 })
     }, { once: true })
   )
-  // After one-time handler consumed, default handler responds with success
+  // 一次性处理器消耗后，默认处理器响应成功
 
   render(<DataLoader />)
   await waitFor(() => {
-    expect(screen.getByText('Data loaded')).toBeInTheDocument()
+    expect(screen.getByText('数据已加载')).toBeInTheDocument()
   })
 })
 ```
 
-## Concurrent Test Isolation
+## 并发测试隔离
 
-Use `server.boundary()` to prevent handler leakage between concurrent tests:
+使用 `server.boundary()` 防止并发测试间的处理器泄漏：
 
 ```typescript
 it.concurrent('admin flow', server.boundary(async () => {
   server.use(
     http.get('/api/me', () => HttpResponse.json({ role: 'admin' }))
   )
-  // Only this test sees the admin override
+  // 仅此测试看到 admin 重写
 }))
 
 it.concurrent('guest flow', server.boundary(async () => {
   server.use(
     http.get('/api/me', () => HttpResponse.json({ role: 'guest' }))
   )
-  // Only this test sees the guest override
+  // 仅此测试看到 guest 重写
 }))
 ```
 
-## Handler Organization
+## 处理器组织
 
-Recommended directory structure:
+推荐的目录结构：
 
 ```
 src/mocks/
-├── handlers.ts          # Aggregates and exports all handlers
+├── handlers.ts          # 聚合并导出所有处理器
 ├── handlers/
-│   ├── user.ts          # User-related handlers
-│   ├── posts.ts         # Post-related handlers
-│   └── auth.ts          # Auth-related handlers
+│   ├── user.ts          # 用户相关处理器
+│   ├── posts.ts         # 帖子相关处理器
+│   └── auth.ts          # 认证相关处理器
 ├── node.ts              # setupServer(...handlers)
 └── browser.ts           # setupWorker(...handlers)
 ```
@@ -199,11 +199,11 @@ export const handlers = [
 ]
 ```
 
-## Higher-Order Resolvers
+## 高阶解析器
 
-Factory functions for reusable response patterns:
+用于可重用响应模式的工厂函数：
 
-### Authentication wrapper
+### 认证包装器
 
 ```typescript
 import { http, HttpResponse } from 'msw'
@@ -218,13 +218,13 @@ function withAuth(resolver) {
   }
 }
 
-// Usage
+// 用法
 http.get('/api/profile', withAuth(({ request }) => {
   return HttpResponse.json({ name: 'John' })
 }))
 ```
 
-### Paginated response wrapper
+### 分页响应包装器
 
 ```typescript
 function withPagination(items) {
@@ -247,9 +247,9 @@ function withPagination(items) {
 http.get('/api/posts', withPagination(allPosts))
 ```
 
-## Dynamic Mock Scenarios
+## 动态模拟场景
 
-Create scenario-specific handler sets for reuse across tests:
+创建特定场景的处理器集，以便在测试中重用：
 
 ```typescript
 function createUserHandlers(scenario: 'happy' | 'error' | 'empty') {
@@ -266,13 +266,13 @@ function createUserHandlers(scenario: 'happy' | 'error' | 'empty') {
   }
 }
 
-test('error scenario', async () => {
+test('错误场景', async () => {
   server.use(createUserHandlers('error'))
   // ...
 })
 ```
 
-### Multi-endpoint scenario
+### 多端点场景
 
 ```typescript
 function createScenario(scenario: 'authenticated' | 'anonymous') {
@@ -287,17 +287,17 @@ function createScenario(scenario: 'authenticated' | 'anonymous') {
   ]
 }
 
-test('authenticated dashboard', async () => {
+test('认证仪表板', async () => {
   server.use(...createScenario('authenticated'))
   // ...
 })
 ```
 
-## Cache Clearing
+## 缓存清除
 
 ### React Query
 
-Create a fresh `QueryClient` per test to avoid stale cache:
+每个测试创建新的 `QueryClient` 以避免陈旧缓存：
 
 ```typescript
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -314,7 +314,7 @@ function renderWithClient(ui: React.ReactElement) {
 
 ### SWR
 
-Use `SWRConfig` with a fresh cache per test:
+每个测试使用带有新缓存的 `SWRConfig`：
 
 ```typescript
 import { SWRConfig } from 'swr'
@@ -330,7 +330,7 @@ function renderWithSWR(ui: React.ReactElement) {
 
 ### Apollo Client
 
-Create a fresh `InMemoryCache` per test:
+每个测试创建新的 `InMemoryCache`：
 
 ```typescript
 import { ApolloClient, InMemoryCache, ApolloProvider } from '@apollo/client'
@@ -346,9 +346,9 @@ function renderWithApollo(ui: React.ReactElement) {
 }
 ```
 
-## Conditional Browser Mocking
+## 条件性浏览器模拟
 
-Enable mocking only in development:
+仅在开发环境中启用模拟：
 
 ```typescript
 // src/main.tsx
@@ -365,7 +365,7 @@ enableMocking().then(() => {
 })
 ```
 
-### In Storybook
+### 在 Storybook 中
 
 ```typescript
 // .storybook/preview.ts

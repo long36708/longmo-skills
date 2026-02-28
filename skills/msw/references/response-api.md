@@ -1,22 +1,22 @@
-# Response API Reference
+# Response API 参考
 
-## Table of Contents
+## 目录
 
-- [HttpResponse Class](#httpresponse-class)
-- [Static Methods](#static-methods)
-- [Response Init Options](#response-init-options)
-- [Cookie Handling](#cookie-handling)
-- [Comparison with Native Response](#comparison-with-native-response)
+- [HttpResponse 类](#httpresponse-类)
+- [静态方法](#静态方法)
+- [响应初始化选项](#响应初始化选项)
+- [Cookie 处理](#cookie-处理)
+- [与原生 Response 的比较](#与原生-response-的比较)
 
-## HttpResponse Class
+## HttpResponse 类
 
-`HttpResponse` extends the native `Response` class. It can be used anywhere a `Response` is expected but adds support for forbidden headers like `Set-Cookie`.
+`HttpResponse` 扩展了原生 `Response` 类。它可以在任何期望 `Response` 的地方使用，但增加了对禁止头部的支持，如 `Set-Cookie`。
 
 ```typescript
 import { HttpResponse } from 'msw'
 ```
 
-### Constructor
+### 构造函数
 
 ```typescript
 new HttpResponse(body?, init?)
@@ -26,31 +26,31 @@ new HttpResponse(body?, init?)
 - `init` — `{ status?, statusText?, headers? }`
 
 ```typescript
-// Plain body with custom status
+// 带自定义状态的纯文本体
 new HttpResponse('Not Found', { status: 404 })
 
-// No body
+// 无体
 new HttpResponse(null, { status: 204 })
 
-// Streaming body
+// 流式体
 new HttpResponse(readableStream, {
   headers: { 'Content-Type': 'text/event-stream' },
 })
 ```
 
-## Static Methods
+## 静态方法
 
-7 static methods for common response types:
+7 个用于常见响应类型的静态方法：
 
-| Method | Content-Type | Description |
+| 方法 | Content-Type | 描述 |
 |--------|-------------|-------------|
-| `HttpResponse.json(body, init?)` | `application/json` | JSON response |
-| `HttpResponse.text(body, init?)` | `text/plain` | Plain text |
-| `HttpResponse.html(body, init?)` | `text/html` | HTML content |
-| `HttpResponse.xml(body, init?)` | `text/xml` | XML content |
-| `HttpResponse.formData(body, init?)` | `multipart/form-data` | Form data |
-| `HttpResponse.arrayBuffer(body, init?)` | (none) | Binary data |
-| `HttpResponse.error()` | (network error) | Network failure |
+| `HttpResponse.json(body, init?)` | `application/json` | JSON 响应 |
+| `HttpResponse.text(body, init?)` | `text/plain` | 纯文本 |
+| `HttpResponse.html(body, init?)` | `text/html` | HTML 内容 |
+| `HttpResponse.xml(body, init?)` | `text/xml` | XML 内容 |
+| `HttpResponse.formData(body, init?)` | `multipart/form-data` | 表单数据 |
+| `HttpResponse.arrayBuffer(body, init?)` | （无） | 二进制数据 |
+| `HttpResponse.error()` | （网络错误） | 网络失败 |
 
 ### HttpResponse.json()
 
@@ -58,7 +58,7 @@ new HttpResponse(readableStream, {
 HttpResponse.json({ name: 'John', age: 30 })
 HttpResponse.json({ name: 'John' }, { status: 201 })
 HttpResponse.json({ error: 'Not found' }, { status: 404 })
-HttpResponse.json([{ id: 1 }, { id: 2 }]) // arrays work too
+HttpResponse.json([{ id: 1 }, { id: 2 }]) // 数组也可以
 ```
 
 ### HttpResponse.text()
@@ -99,16 +99,16 @@ HttpResponse.arrayBuffer(buffer)
 
 ### HttpResponse.error()
 
-Creates a network error response (`type: "error"`). The client receives a `TypeError: Failed to fetch`.
+创建网络错误响应（`type: "error"`）。客户端收到 `TypeError: Failed to fetch`。
 
 ```typescript
 HttpResponse.error()
-// No arguments — network errors have no body, status, or headers
+// 无参数 — 网络错误没有体、状态或头部
 ```
 
-## Response Init Options
+## 响应初始化选项
 
-All static methods and the constructor accept an optional init object:
+所有静态方法和构造函数都接受一个可选的 init 对象：
 
 ```typescript
 HttpResponse.json(
@@ -124,7 +124,7 @@ HttpResponse.json(
 )
 ```
 
-### Multiple headers with same name
+### 相同名称的多个头部
 
 ```typescript
 new HttpResponse(null, {
@@ -135,23 +135,23 @@ new HttpResponse(null, {
 })
 ```
 
-## Cookie Handling
+## Cookie 处理
 
-Native `Response` forbids `Set-Cookie` in the constructor. `HttpResponse` bypasses this:
+原生 `Response` 禁止在构造函数中使用 `Set-Cookie`。`HttpResponse` 绕过此限制：
 
 ```typescript
-// GOOD: HttpResponse supports Set-Cookie
+// 正确：HttpResponse 支持 Set-Cookie
 new HttpResponse(null, {
   headers: { 'Set-Cookie': 'session=abc123' },
 })
 
-// BAD: native Response silently drops Set-Cookie
+// 错误：原生 Response 静默丢弃 Set-Cookie
 new Response(null, {
   headers: { 'Set-Cookie': 'session=abc123' },
 })
 ```
 
-### Multiple cookies
+### 多个 cookies
 
 ```typescript
 new HttpResponse(null, {
@@ -162,12 +162,12 @@ new HttpResponse(null, {
 })
 ```
 
-## Comparison with Native Response
+## 与原生 Response 的比较
 
-| Feature | `Response` | `HttpResponse` |
+| 特性 | `Response` | `HttpResponse` |
 |---------|-----------|----------------|
-| JSON body | Manual `JSON.stringify` | `HttpResponse.json()` auto-serializes |
-| Content-Type | Must set manually | Auto-set by static methods |
-| Set-Cookie | Forbidden (silently dropped) | Supported |
-| Network error | Not possible | `HttpResponse.error()` |
-| Use in MSW handlers | Yes (except cookies) | Yes (full support) |
+| JSON 体 | 手动 `JSON.stringify` | `HttpResponse.json()` 自动序列化 |
+| Content-Type | 必须手动设置 | 静态方法自动设置 |
+| Set-Cookie | 禁止（静默丢弃） | 支持 |
+| 网络错误 | 不可能 | `HttpResponse.error()` |
+| 在 MSW 处理器中使用 | 是（除 cookies 外） | 是（完全支持） |

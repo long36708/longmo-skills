@@ -1,27 +1,27 @@
 ---
-title: Test Application Behavior, Not Request Mechanics
+title: 测试应用程序行为，而不是请求机制
 impact: HIGH
-description: Assert on UI changes, state transitions, or return values — not on whether fetch was called with specific arguments.
+description: 断言 UI 变化、状态转换或返回值 — 而不是断言 fetch 是否以特定参数调用。
 tags: testing, behavior, assertion, fetch, ui
 ---
 
-# Test Application Behavior, Not Request Mechanics
+# 测试应用程序行为，而不是请求机制
 
-## Problem
+## 问题
 
-Asserting that `fetch` was called with specific arguments tests implementation details, not behavior. If the app switches from `fetch` to `axios`, the test breaks even though behavior is identical.
+断言 `fetch` 是否以特定参数调用测试的是实现细节，而不是行为。如果应用程序从 `fetch` 切换到 `axios`，即使行为相同，测试也会失败。
 
-## Incorrect
+## 错误示例
 
 ```typescript
-// BUG: testing implementation, not behavior
-test('logs in the user', async () => {
+// BUG: 测试实现，而不是行为
+test('用户登录', async () => {
   render(<LoginForm />)
   await userEvent.type(screen.getByLabelText('Email'), 'john@test.com')
   await userEvent.type(screen.getByLabelText('Password'), 'password')
   await userEvent.click(screen.getByRole('button', { name: 'Sign In' }))
 
-  // Fragile: tests HOW the app fetches, not WHAT happens
+  // 脆弱：测试应用程序如何获取，而不是发生了什么
   expect(fetch).toHaveBeenCalledWith('/api/login', {
     method: 'POST',
     body: JSON.stringify({ email: 'john@test.com', password: 'password' }),
@@ -29,22 +29,22 @@ test('logs in the user', async () => {
 })
 ```
 
-## Correct
+## 正确示例
 
 ```typescript
-test('logs in the user', async () => {
+test('用户登录', async () => {
   render(<LoginForm />)
   await userEvent.type(screen.getByLabelText('Email'), 'john@test.com')
   await userEvent.type(screen.getByLabelText('Password'), 'password')
   await userEvent.click(screen.getByRole('button', { name: 'Sign In' }))
 
-  // Tests WHAT the user sees after login
+  // 测试用户在登录后看到什么
   await waitFor(() => {
     expect(screen.getByText('Welcome, John!')).toBeInTheDocument()
   })
 })
 ```
 
-## Why
+## 原因
 
-MSW intercepts requests at the network level, so your tests should focus on observable outcomes: what the user sees, what state changes, what the function returns. This makes tests resilient to HTTP client refactors and more readable.
+MSW 在网络级别拦截请求，因此您的测试应关注可观察的结果：用户看到什么、状态如何变化、函数返回什么。这使得测试对 HTTP 客户端重构具有弹性，并且更易于阅读。

@@ -1,37 +1,37 @@
-# MSW Anti-Patterns
+# MSW 反模式
 
-## Table of Contents
+## 目录
 
-1. [Using v1 `rest` namespace](#1-using-v1-rest-namespace)
-2. [Putting query params in URL predicates](#2-putting-query-params-in-url-predicates)
-3. [Importing setupServer from wrong path](#3-importing-setupserver-from-wrong-path)
-4. [Missing afterEach(resetHandlers)](#4-missing-aftereachresethandlers)
-5. [Asserting on fetch calls](#5-asserting-on-fetch-calls)
-6. [Not awaiting request.json()](#6-not-awaiting-requestjson)
-7. [Using native Response for cookies](#7-using-native-response-for-cookies)
-8. [Not using server.boundary() for concurrent tests](#8-not-using-serverboundary-for-concurrent-tests)
-9. [Not setting onUnhandledRequest: 'error'](#9-not-setting-onunhandledrequest-error)
-10. [Throwing errors inside resolvers](#10-throwing-errors-inside-resolvers)
+1. [使用 v1 `rest` 命名空间](#1-使用-v1-rest-命名空间)
+2. [在 URL 谓词中使用查询参数](#2-在-url-谓词中使用查询参数)
+3. [从错误路径导入 setupServer](#3-从错误路径导入-setupserver)
+4. [缺少 afterEach(resetHandlers)](#4-缺少-aftereachresethandlers)
+5. [断言 fetch 调用](#5-断言-fetch-调用)
+6. [未等待 request.json()](#6-未等待-requestjson)
+7. [使用原生 Response 处理 cookies](#7-使用原生-response-处理-cookies)
+8. [并发测试中未使用 server.boundary()](#8-并发测试中未使用-serverboundary)
+9. [未设置 onUnhandledRequest: 'error'](#9-未设置-onunhandledrequest-error)
+10. [在解析器中抛出错误](#10-在解析器中抛出错误)
 
-## 1. Using v1 `rest` namespace
+## 1. 使用 v1 `rest` 命名空间
 
 ```typescript
-// BAD
+// 错误
 import { rest } from 'msw'
 rest.get('/api/user', (req, res, ctx) => res(ctx.json({ name: 'John' })))
 
-// GOOD
+// 正确
 import { http, HttpResponse } from 'msw'
 http.get('/api/user', () => HttpResponse.json({ name: 'John' }))
 ```
 
-## 2. Putting query params in URL predicates
+## 2. 在 URL 谓词中使用查询参数
 
 ```typescript
-// BAD: silently matches nothing
+// 错误：静默不匹配任何内容
 http.get('/post?id=1', resolver)
 
-// GOOD: read query params inside resolver
+// 正确：在解析器内部读取查询参数
 http.get('/post', ({ request }) => {
   const url = new URL(request.url)
   const id = url.searchParams.get('id')
@@ -39,106 +39,106 @@ http.get('/post', ({ request }) => {
 })
 ```
 
-## 3. Importing setupServer from wrong path
+## 3. 从错误路径导入 setupServer
 
 ```typescript
-// BAD
+// 错误
 import { setupServer } from 'msw'
 
-// GOOD
+// 正确
 import { setupServer } from 'msw/node'
 ```
 
-## 4. Missing afterEach(resetHandlers)
+## 4. 缺少 afterEach(resetHandlers)
 
 ```typescript
-// BAD: handlers leak between tests
+// 错误：处理器在测试间泄漏
 beforeAll(() => server.listen())
 afterAll(() => server.close())
 
-// GOOD: reset after each test
+// 正确：每个测试后重置
 beforeAll(() => server.listen())
 afterEach(() => server.resetHandlers())
 afterAll(() => server.close())
 ```
 
-## 5. Asserting on fetch calls
+## 5. 断言 fetch 调用
 
 ```typescript
-// BAD: tests implementation, not behavior
+// 错误：测试实现而非行为
 expect(fetch).toHaveBeenCalledWith('/api/login', expect.objectContaining({
   method: 'POST',
 }))
 
-// GOOD: tests what the user sees
+// 正确：测试用户看到的内容
 await waitFor(() => {
   expect(screen.getByText('Welcome!')).toBeInTheDocument()
 })
 ```
 
-## 6. Not awaiting request.json()
+## 6. 未等待 request.json()
 
 ```typescript
-// BAD: body is a ReadableStream, not parsed data
+// 错误：body 是 ReadableStream，不是解析后的数据
 http.post('/api/user', ({ request }) => {
   const body = request.body
   return HttpResponse.json({ received: body })
 })
 
-// GOOD: await the async method
+// 正确：等待异步方法
 http.post('/api/user', async ({ request }) => {
   const body = await request.json()
   return HttpResponse.json({ received: body })
 })
 ```
 
-## 7. Using native Response for cookies
+## 7. 使用原生 Response 处理 cookies
 
 ```typescript
-// BAD: Set-Cookie silently dropped
+// 错误：Set-Cookie 静默丢失
 new Response(null, {
   headers: { 'Set-Cookie': 'token=abc' },
 })
 
-// GOOD: HttpResponse supports Set-Cookie
+// 正确：HttpResponse 支持 Set-Cookie
 new HttpResponse(null, {
   headers: { 'Set-Cookie': 'token=abc' },
 })
 ```
 
-## 8. Not using server.boundary() for concurrent tests
+## 8. 并发测试中未使用 server.boundary()
 
 ```typescript
-// BAD: overrides leak across concurrent tests
+// 错误：重写在并发测试间泄漏
 it.concurrent('test A', async () => {
   server.use(http.get('/api/user', () => HttpResponse.json({ role: 'admin' })))
 })
 
-// GOOD: boundary isolates overrides
+// 正确：boundary 隔离重写
 it.concurrent('test A', server.boundary(async () => {
   server.use(http.get('/api/user', () => HttpResponse.json({ role: 'admin' })))
 }))
 ```
 
-## 9. Not setting onUnhandledRequest: 'error'
+## 9. 未设置 onUnhandledRequest: 'error'
 
 ```typescript
-// BAD: unhandled requests silently pass through
+// 错误：未处理的请求静默通过
 server.listen()
 
-// GOOD: missing handlers fail the test
+// 正确：缺少处理器时测试失败
 server.listen({ onUnhandledRequest: 'error' })
 ```
 
-## 10. Throwing errors inside resolvers
+## 10. 在解析器中抛出错误
 
 ```typescript
-// BAD: crashes handler internals
+// 错误：崩溃处理器内部
 http.get('/api/data', () => {
   throw new Error('Network failure')
 })
 
-// GOOD: simulates actual network error
+// 正确：模拟实际的网络错误
 http.get('/api/data', () => {
   return HttpResponse.error()
 })

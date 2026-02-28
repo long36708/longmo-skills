@@ -1,55 +1,55 @@
-# MSW v2 — Complete Guide
+# MSW v2 — 完整指南
 
-> This document is for AI agents and LLMs to follow when writing, reviewing, or debugging MSW (Mock Service Worker) handlers, server setup, and test patterns. It compiles all rules and references into a single executable guide.
+> 本文档供AI代理和LLM在编写、审查或调试MSW（Mock Service Worker）处理器、服务器设置和测试模式时参考。它将所有规则和参考资料编译成一个可执行的指南。
 
-**Baseline:** msw ^2.0.0
-
----
-
-## Abstract
-
-MSW (Mock Service Worker) is a network-level API mocking library for JavaScript/TypeScript. It intercepts HTTP and GraphQL requests using the `http` and `graphql` namespaces, returning mock responses via `HttpResponse`. In tests, `setupServer` (from `msw/node`) intercepts at the request-client level; in the browser, `setupWorker` (from `msw/browser`) uses a Service Worker. MSW v2 completely removed the v1 `rest` namespace, `res(ctx.*)` response composition, and `(req, res, ctx)` resolver signature. This guide covers all v2 patterns, testing best practices, and migration from v1.
+**基准版本:** msw ^2.0.0
 
 ---
 
-## Table of Contents
+## 摘要
 
-1. [Handler Design](#1-handler-design) — CRITICAL
-2. [Setup & Lifecycle](#2-setup--lifecycle) — CRITICAL
-3. [Request Reading](#3-request-reading) — HIGH
-4. [Response Construction](#4-response-construction) — HIGH
-5. [Test Patterns](#5-test-patterns) — HIGH
-6. [GraphQL](#6-graphql) — MEDIUM
-7. [Utilities](#7-utilities) — MEDIUM
+MSW（Mock Service Worker）是一个网络级的JavaScript/TypeScript API模拟库。它使用 `http` 和 `graphql` 命名空间拦截HTTP和GraphQL请求，通过 `HttpResponse` 返回模拟响应。在测试中，`setupServer`（来自 `msw/node`）在请求-客户端级别进行拦截；在浏览器中，`setupWorker`（来自 `msw/browser`）使用Service Worker。MSW v2完全移除了v1的 `rest` 命名空间、`res(ctx.*)` 响应组合和 `(req, res, ctx)` 解析器签名。本指南涵盖所有v2模式、测试最佳实践以及从v1迁移的内容。
 
 ---
 
-## 1. Handler Design
-**Impact: CRITICAL**
+## 目录
 
-### Rule: Use `http` Namespace Instead of `rest`
+1. [处理器设计](#1-处理器设计) — 关键
+2. [设置与生命周期](#2-设置与生命周期) — 关键
+3. [请求读取](#3-请求读取) — 高
+4. [响应构造](#4-响应构造) — 高
+5. [测试模式](#5-测试模式) — 高
+6. [GraphQL](#6-graphql) — 中等
+7. [工具函数](#7-工具函数) — 中等
 
-The `rest` namespace was removed in MSW 2.0. All HTTP handlers use `http`.
+---
+
+## 1. 处理器设计
+**影响程度: 关键**
+
+### 规则: 使用 `http` 命名空间代替 `rest`
+
+`rest` 命名空间在 MSW 2.0 中被移除。所有 HTTP 处理器都使用 `http`。
 
 ```typescript
-// INCORRECT — rest does not exist in v2
+// 错误 — v2 中不存在 rest
 import { rest } from 'msw'
 rest.get('/api/user', (req, res, ctx) => res(ctx.json({ name: 'John' })))
 
-// CORRECT
+// 正确
 import { http, HttpResponse } from 'msw'
 http.get('/api/user', () => HttpResponse.json({ name: 'John' }))
 ```
 
-### Rule: Never Put Query Parameters in Handler URL Predicates
+### 规则: 不要在处理器URL谓词中包含查询参数
 
-MSW matches by pathname only. Query parameters in the URL predicate are silently ignored.
+MSW 仅按路径名匹配。URL谓词中的查询参数会被静默忽略。
 
 ```typescript
-// INCORRECT — silently matches nothing
+// 错误 — 静默匹配不到任何内容
 http.get('/post?id=1', resolver)
 
-// CORRECT — read query params inside the resolver
+// 正确 — 在解析器内部读取查询参数
 http.get('/post', ({ request }) => {
   const url = new URL(request.url)
   const id = url.searchParams.get('id')
@@ -57,57 +57,57 @@ http.get('/post', ({ request }) => {
 })
 ```
 
-### Rule: Use v2 Destructured Resolver Signature
+### 规则: 使用 v2 的解构解析器签名
 
-v2 resolvers receive a single info object: `{ request, params, cookies, requestId }`.
+v2 解析器接收单个信息对象：`{ request, params, cookies, requestId }`。
 
 ```typescript
-// INCORRECT — v1 triple signature
+// 错误 — v1 三重签名
 http.get('/api/user/:id', (req, res, ctx) => {
   return res(ctx.json({ id: req.params.id }))
 })
 
-// CORRECT — v2 destructured info object
+// 正确 — v2 解构信息对象
 http.get('/api/user/:id', ({ request, params, cookies }) => {
   return HttpResponse.json({ id: params.id })
 })
 ```
 
-Resolver info properties:
+解析器信息属性：
 
-| Property | Type | Description |
+| 属性 | 类型 | 描述 |
 |----------|------|-------------|
-| `request` | `Request` | Standard Fetch API Request object |
-| `params` | `Record<string, string>` | Path parameters from URL pattern |
-| `cookies` | `Record<string, string>` | Parsed request cookies |
-| `requestId` | `string` | Unique request identifier |
+| `request` | `Request` | 标准 Fetch API Request 对象 |
+| `params` | `Record<string, string>` | 来自URL模式的路径参数 |
+| `cookies` | `Record<string, string>` | 解析后的请求cookies |
+| `requestId` | `string` | 唯一的请求标识符 |
 
-### Rule: Use `HttpResponse` Static Methods Instead of `res(ctx.*)`
+### 规则: 使用 `HttpResponse` 静态方法代替 `res(ctx.*)`
 
-v2 uses standard `Response` objects constructed via `HttpResponse`.
+v2 使用通过 `HttpResponse` 构造的标准 `Response` 对象。
 
 ```typescript
-// INCORRECT — res() and ctx are removed
+// 错误 — res() 和 ctx 已被移除
 http.get('/api/user', (req, res, ctx) => {
   return res(ctx.status(200), ctx.json({ name: 'John' }))
 })
 
-// CORRECT
+// 正确
 http.get('/api/user', () => {
   return HttpResponse.json({ name: 'John' }, { status: 200 })
 })
 ```
 
-Complete v1 to v2 mapping:
+完整的 v1 到 v2 映射表：
 
-| v1 Pattern | v2 Equivalent |
+| v1 模式 | v2 等效写法 |
 |-----------|---------------|
 | `res(ctx.json(data))` | `HttpResponse.json(data)` |
 | `res(ctx.text(str))` | `HttpResponse.text(str)` |
 | `res(ctx.xml(str))` | `HttpResponse.xml(str)` |
 | `res(ctx.body(str))` | `new HttpResponse(str)` |
 | `res(ctx.status(code))` | `new HttpResponse(null, { status: code })` |
-| `res(ctx.set(name, val))` | Include in `headers` init |
+| `res(ctx.set(name, val))` | 在 `headers` 初始化中包含 |
 | `res(ctx.delay(ms), ...)` | `await delay(ms); return HttpResponse.json(...)` |
 | `res(ctx.cookie(name, val))` | `headers: { 'Set-Cookie': 'name=val' }` |
 | `res.networkError(msg)` | `HttpResponse.error()` |
@@ -115,53 +115,53 @@ Complete v1 to v2 mapping:
 
 ---
 
-## 2. Setup & Lifecycle
-**Impact: CRITICAL**
+## 2. 设置与生命周期
+**影响程度: 关键**
 
-### Rule: Import Server/Worker from Correct Subpaths
+### 规则: 从正确的子路径导入 Server/Worker
 
 ```typescript
-// INCORRECT
+// 错误
 import { setupServer } from 'msw'
 
-// CORRECT
-import { setupServer } from 'msw/node'    // Node.js (tests, SSR)
-import { setupWorker } from 'msw/browser'  // Browser (Storybook, dev)
-import { http, HttpResponse } from 'msw'   // Handlers and utilities
+// 正确
+import { setupServer } from 'msw/node'    // Node.js (测试, SSR)
+import { setupWorker } from 'msw/browser'  // 浏览器 (Storybook, 开发)
+import { http, HttpResponse } from 'msw'   // 处理器和工具函数
 ```
 
-| Export | Import from |
+| 导出 | 导入来源 |
 |--------|-------------|
 | `http`, `graphql`, `HttpResponse`, `delay`, `bypass`, `passthrough` | `'msw'` |
 | `setupServer` | `'msw/node'` |
 | `setupWorker` | `'msw/browser'` |
 
-### Rule: Always Use beforeAll/afterEach/afterAll Lifecycle Pattern
+### 规则: 始终使用 beforeAll/afterEach/afterAll 生命周期模式
 
-Missing `afterEach(() => server.resetHandlers())` causes handlers added via `server.use()` to leak between tests.
+缺少 `afterEach(() => server.resetHandlers())` 会导致通过 `server.use()` 添加的处理器在测试之间泄漏。
 
 ```typescript
-// INCORRECT — handlers leak
+// 错误 — 处理器泄漏
 beforeAll(() => server.listen())
 afterAll(() => server.close())
 
-// CORRECT
+// 正确
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
 afterEach(() => server.resetHandlers())
 afterAll(() => server.close())
 ```
 
-| Hook | Method | Purpose |
+| 钩子 | 方法 | 目的 |
 |------|--------|---------|
-| `beforeAll` | `server.listen()` | Start intercepting requests |
-| `afterEach` | `server.resetHandlers()` | Remove runtime overrides |
-| `afterAll` | `server.close()` | Stop intercepting, clean up |
+| `beforeAll` | `server.listen()` | 开始拦截请求 |
+| `afterEach` | `server.resetHandlers()` | 移除运行时覆盖 |
+| `afterAll` | `server.close()` | 停止拦截，清理 |
 
-### Rule: Organize Mocks in `src/mocks/`
+### 规则: 在 `src/mocks/` 中组织模拟文件
 
 ```
 src/mocks/
-├── handlers.ts    # Shared happy-path handlers
+├── handlers.ts    # 共享的成功路径处理器
 ├── node.ts        # setupServer(...handlers)
 └── browser.ts     # setupWorker(...handlers)
 ```
@@ -188,77 +188,77 @@ export const worker = setupWorker(...handlers)
 
 ---
 
-## 3. Request Reading
-**Impact: HIGH**
+## 3. 请求读取
+**影响程度: 高**
 
-### Rule: Clone Request Before Reading Body in Lifecycle Events
+### 规则: 在生命周期事件中读取请求体前先克隆请求
 
-Reading `request.json()` consumes the body stream. In lifecycle events, clone first.
+读取 `request.json()` 会消耗请求体流。在生命周期事件中，先克隆请求。
 
 ```typescript
-// INCORRECT — body consumed, handler gets empty body
+// 错误 — 请求体被消耗，处理器获得空请求体
 server.events.on('request:start', async ({ request }) => {
   const body = await request.json()
 })
 
-// CORRECT
+// 正确
 server.events.on('request:start', async ({ request }) => {
   const body = await request.clone().json()
 })
 ```
 
-### Rule: Always Await Body Reading Methods
+### 规则: 始终等待请求体读取方法
 
-v2 uses the standard Fetch API Request — body reading is always async.
+v2 使用标准的 Fetch API Request — 请求体读取始终是异步的。
 
 ```typescript
-// INCORRECT — request.body is a ReadableStream
+// 错误 — request.body 是一个 ReadableStream
 http.post('/api/user', ({ request }) => {
   const body = request.body
 })
 
-// CORRECT
+// 正确
 http.post('/api/user', async ({ request }) => {
   const body = await request.json()
 })
 ```
 
-| Method | Returns | Use for |
+| 方法 | 返回 | 用于 |
 |--------|---------|---------|
-| `await request.json()` | Parsed object | JSON payloads |
-| `await request.text()` | String | Plain text, HTML |
-| `await request.formData()` | `FormData` | Form submissions |
-| `await request.arrayBuffer()` | `ArrayBuffer` | Binary data |
-| `await request.blob()` | `Blob` | Binary with MIME type |
+| `await request.json()` | 解析后的对象 | JSON 负载 |
+| `await request.text()` | 字符串 | 纯文本，HTML |
+| `await request.formData()` | `FormData` | 表单提交 |
+| `await request.arrayBuffer()` | `ArrayBuffer` | 二进制数据 |
+| `await request.blob()` | `Blob` | 带 MIME 类型的二进制数据 |
 
 ---
 
-## 4. Response Construction
-**Impact: HIGH**
+## 4. 响应构造
+**影响程度: 高**
 
-### Rule: Use `HttpResponse` for Cookie Mocking
+### 规则: 使用 `HttpResponse` 进行 Cookie 模拟
 
-Native `Response` forbids `Set-Cookie` headers. `HttpResponse` bypasses this.
+原生 `Response` 禁止 `Set-Cookie` 头。`HttpResponse` 绕过了这个限制。
 
 ```typescript
-// INCORRECT — Set-Cookie silently dropped
+// 错误 — Set-Cookie 被静默丢弃
 new Response(null, { headers: { 'Set-Cookie': 'token=abc' } })
 
-// CORRECT
+// 正确
 new HttpResponse(null, { headers: { 'Set-Cookie': 'token=abc' } })
 ```
 
-### Rule: Use `HttpResponse.error()` for Network Failures
+### 规则: 使用 `HttpResponse.error()` 模拟网络故障
 
 ```typescript
-// INCORRECT — throwing crashes the handler
+// 错误 — 抛出错误会使处理器崩溃
 http.get('/api/data', () => { throw new Error('fail') })
 
-// CORRECT — simulates TypeError: Failed to fetch
+// 正确 — 模拟 TypeError: Failed to fetch
 http.get('/api/data', () => HttpResponse.error())
 ```
 
-### Rule: Use ReadableStream for Streaming Responses
+### 规则: 使用 ReadableStream 实现流式响应
 
 ```typescript
 import { http, HttpResponse, delay } from 'msw'
@@ -284,25 +284,25 @@ http.get('/api/stream', () => {
 
 ---
 
-## 5. Test Patterns
-**Impact: HIGH**
+## 5. 测试模式
+**影响程度: 高**
 
-### Rule: Test Application Behavior, Not Request Mechanics
+### 规则: 测试应用行为，而不是请求机制
 
 ```typescript
-// INCORRECT — tests implementation
+// 错误 — 测试实现细节
 expect(fetch).toHaveBeenCalledWith('/api/login', expect.any(Object))
 
-// CORRECT — tests observable behavior
+// 正确 — 测试可观察行为
 await waitFor(() => {
   expect(screen.getByText('Welcome, John!')).toBeInTheDocument()
 })
 ```
 
-### Rule: Use `server.use()` for Per-Test Overrides
+### 规则: 使用 `server.use()` 进行每测试覆盖
 
 ```typescript
-test('shows error state', async () => {
+test('显示错误状态', async () => {
   server.use(
     http.get('/api/user', () => new HttpResponse(null, { status: 500 }))
   )
@@ -313,50 +313,50 @@ test('shows error state', async () => {
 })
 ```
 
-### Rule: Use `server.boundary()` for Concurrent Test Isolation
+### 规则: 使用 `server.boundary()` 实现并发测试隔离
 
 ```typescript
-it.concurrent('admin view', server.boundary(async () => {
+it.concurrent('管理员视图', server.boundary(async () => {
   server.use(
     http.get('/api/user', () => HttpResponse.json({ role: 'admin' }))
   )
-  // Override scoped to this boundary
+  // 覆盖范围限于此边界内
 }))
 
-it.concurrent('member view', server.boundary(async () => {
+it.concurrent('成员视图', server.boundary(async () => {
   server.use(
     http.get('/api/user', () => HttpResponse.json({ role: 'member' }))
   )
-  // Isolated from admin test
+  // 与管理员测试隔离
 }))
 ```
 
-### Rule: Set `onUnhandledRequest: 'error'`
+### 规则: 设置 `onUnhandledRequest: 'error'`
 
 ```typescript
-// Default 'warn' silently passes through — missing handlers don't fail tests
+// 默认的 'warn' 会静默通过 — 缺少处理器不会导致测试失败
 server.listen({ onUnhandledRequest: 'error' })
 ```
 
-| Strategy | Behavior |
+| 策略 | 行为 |
 |----------|----------|
-| `'warn'` (default) | Console warning, passes through |
-| `'error'` | Throws, test fails |
-| `'bypass'` | Silent, passes through |
-| Custom function | Conditional handling |
+| `'warn'` (默认) | 控制台警告，请求通过 |
+| `'error'` | 抛出错误，测试失败 |
+| `'bypass'` | 静默，请求通过 |
+| 自定义函数 | 条件性处理 |
 
 ---
 
 ## 6. GraphQL
-**Impact: MEDIUM**
+**影响程度: 中等**
 
-### Rule: Return `{ data }` / `{ errors }` Directly
+### 规则: 直接返回 `{ data }` / `{ errors }`
 
 ```typescript
-// INCORRECT — ctx.data() removed in v2
+// 错误 — v2 中移除了 ctx.data()
 graphql.query('GetUser', (req, res, ctx) => res(ctx.data({ user: {} })))
 
-// CORRECT
+// 正确
 graphql.query('GetUser', ({ variables }) => {
   return HttpResponse.json({
     data: { user: { id: variables.id, name: 'John' } },
@@ -364,7 +364,7 @@ graphql.query('GetUser', ({ variables }) => {
 })
 ```
 
-### Rule: Use `graphql.link()` for Multiple Endpoints
+### 规则: 使用 `graphql.link()` 处理多个端点
 
 ```typescript
 const github = graphql.link('https://api.github.com/graphql')
@@ -382,21 +382,21 @@ const handlers = [
 
 ---
 
-## 7. Utilities
-**Impact: MEDIUM**
+## 7. 工具函数
+**影响程度: 中等**
 
-### Rule: `bypass()` vs `passthrough()` — Not Interchangeable
+### 规则: `bypass()` 与 `passthrough()` — 不可互换
 
 ```typescript
 import { bypass, passthrough } from 'msw'
 
-// passthrough() — let intercepted request through to real server
+// passthrough() — 让拦截的请求通过到真实服务器
 http.get('/api/flags', () => {
   if (process.env.USE_REAL_FLAGS) return passthrough()
   return HttpResponse.json({ enabled: true })
 })
 
-// bypass() — make additional request that won't be intercepted
+// bypass() — 创建一个不会被拦截的附加请求
 http.get('/api/user', async ({ request }) => {
   const real = await fetch(bypass(request))
   const data = await real.json()
@@ -404,25 +404,25 @@ http.get('/api/user', async ({ request }) => {
 })
 ```
 
-| Function | Creates new request? | Original continues? | Use case |
+| 函数 | 创建新请求？ | 原始请求继续？ | 使用场景 |
 |----------|---------------------|---------------------|----------|
-| `passthrough()` | No | Yes | Conditional mocking |
-| `bypass(request)` | Yes | No | Response patching |
+| `passthrough()` | 否 | 是 | 条件性模拟 |
+| `bypass(request)` | 是 | 否 | 响应修补 |
 
-### Rule: Use Explicit Milliseconds with `delay()`
+### 规则: 使用明确的毫秒数设置 `delay()`
 
 ```typescript
-// INCORRECT — delay() is instant in Node.js
+// 错误 — delay() 在 Node.js 中是立即的
 await delay()
 
-// CORRECT
-await delay(200)          // Always waits 200ms
-await delay('infinite')   // Never resolves — test timeout handling
+// 正确
+await delay(200)          // 总是等待 200ms
+await delay('infinite')   // 永不解析 — 测试超时处理
 ```
 
-| Usage | Browser | Node.js |
+| 用法 | 浏览器 | Node.js |
 |-------|---------|---------|
-| `delay()` | Random realistic | Instant (negated) |
-| `delay(ms)` | Waits `ms` | Waits `ms` |
-| `delay('real')` | Random realistic | Random realistic |
-| `delay('infinite')` | Never resolves | Never resolves |
+| `delay()` | 随机真实时间 | 立即（被忽略） |
+| `delay(ms)` | 等待 `ms` 毫秒 | 等待 `ms` 毫秒 |
+| `delay('real')` | 随机真实时间 | 随机真实时间 |
+| `delay('infinite')` | 永不解析 | 永不解析 |

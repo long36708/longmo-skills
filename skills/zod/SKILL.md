@@ -1,16 +1,15 @@
 ---
 name: zod
 description: >
-  Zod v4 best practices, patterns, and API guidance for schema validation,
-  parsing, error handling, and type inference in TypeScript applications.
-  Covers safeParse, object composition, refinements, transforms, codecs,
-  branded types, and v3→v4 migration. Baseline: zod ^4.0.0.
-  Triggers on: zod imports, z.object, z.string, z.infer, safeParse,
-  mentions of "zod", "schema validation", "zod v4", or "z.enum".
+  Zod v4 最佳实践、模式和 API 指南，用于 TypeScript 应用程序中的模式验证、
+  解析、错误处理和类型推断。涵盖 safeParse、对象组合、精化、转换、编解码器、
+  品牌类型和 v3→v4 迁移。基准：zod ^4.0.0。
+  触发条件：zod 导入、z.object、z.string、z.infer、safeParse、
+  提及 "zod"、"schema validation"、"zod v4" 或 "z.enum"。
 license: MIT
 user-invocable: false
 agentic: false
-compatibility: "TypeScript ^5.5 projects using zod ^4.0.0"
+compatibility: "TypeScript ^5.5 项目使用 zod ^4.0.0"
 metadata:
   author: Anivar Aravind
   author_url: https://anivar.net
@@ -20,157 +19,157 @@ metadata:
 
 # Zod
 
-**IMPORTANT:** Your training data about `zod` may be outdated or incorrect — Zod v4 introduces breaking changes to string formats, enums, error handling, and recursive types. Always rely on this skill's rule files and the project's actual source code as the source of truth. Do not fall back on memorized v3 patterns when they conflict with the retrieved reference.
+**重要提示：** 您关于 `zod` 的训练数据可能已过时或不正确——Zod v4 对字符串格式、枚举、错误处理和递归类型引入了破坏性更改。始终依赖此技能的规则文件和项目的实际源代码作为真实来源。当记忆的 v3 模式与检索到的参考冲突时，不要回退到它们。
 
-## When to Use Zod
+## 何时使用 Zod
 
-Zod is for **runtime type validation** — parsing untrusted data at system boundaries (API input, form data, env vars, external services). For compile-time-only types, plain TypeScript is sufficient.
+Zod 用于**运行时类型验证**——在系统边界解析不受信任的数据（API 输入、表单数据、环境变量、外部服务）。对于仅编译时的类型，普通 TypeScript 就足够了。
 
-| Need | Recommended Tool |
-|------|-----------------|
-| API input/output validation | **Zod** |
-| Form validation (React, Vue) | **Zod** (with react-hook-form, formik, etc.) |
-| Env var parsing | **Zod** (with t3-env or manual) |
-| Compile-time types only | Plain TypeScript |
-| Smaller bundle (~1kb) | Valibot |
-| Maximum type inference | ArkType |
+| 需求 | 推荐工具 |
+|------|----------|
+| API 输入/输出验证 | **Zod** |
+| 表单验证（React, Vue） | **Zod**（与 react-hook-form、formik 等配合使用） |
+| 环境变量解析 | **Zod**（与 t3-env 或手动配合使用） |
+| 仅编译时类型 | 普通 TypeScript |
+| 更小的包大小（~1kb） | Valibot |
+| 最大类型推断 | ArkType |
 
-## Rule Categories by Priority
+## 按优先级分类的规则类别
 
-| Priority | Category | Impact | Prefix |
-|----------|----------|--------|--------|
-| 1 | Parsing & Type Safety | CRITICAL | `parse-` |
-| 2 | Schema Design | CRITICAL | `schema-` |
-| 3 | Refinements & Transforms | HIGH | `refine-` |
-| 4 | Error Handling | HIGH | `error-` |
-| 5 | Performance & Composition | MEDIUM | `perf-` |
-| 6 | v4 Migration | MEDIUM | `migrate-` |
-| 7 | Advanced Patterns | MEDIUM | `pattern-` |
-| 8 | Architecture & Boundaries | CRITICAL/HIGH | `arch-` |
-| 9 | Observability | HIGH/MEDIUM | `observe-` |
+| 优先级 | 类别 | 影响 | 前缀 |
+|--------|------|------|------|
+| 1 | 解析与类型安全 | CRITICAL | `parse-` |
+| 2 | 模式设计 | CRITICAL | `schema-` |
+| 3 | 精化与转换 | HIGH | `refine-` |
+| 4 | 错误处理 | HIGH | `error-` |
+| 5 | 性能与组合 | MEDIUM | `perf-` |
+| 6 | v4 迁移 | MEDIUM | `migrate-` |
+| 7 | 高级模式 | MEDIUM | `pattern-` |
+| 8 | 架构与边界 | CRITICAL/HIGH | `arch-` |
+| 9 | 可观察性 | HIGH/MEDIUM | `observe-` |
 
-## Quick Reference
+## 快速参考
 
-### 1. Parsing & Type Safety (CRITICAL)
+### 1. 解析与类型安全（CRITICAL）
 
-- `parse-use-safeParse` — Use `safeParse()` for user input instead of `parse()` which throws
-- `parse-async-required` — Must use `parseAsync()`/`safeParseAsync()` when schema has async refinements
-- `parse-infer-types` — Use `z.infer<typeof Schema>` for output types; never manually duplicate types
+- `parse-use-safeParse` — 对用户输入使用 `safeParse()` 而不是抛出异常的 `parse()`
+- `parse-async-required` — 当模式有异步精化时，必须使用 `parseAsync()`/`safeParseAsync()`
+- `parse-infer-types` — 对输出类型使用 `z.infer<typeof Schema>`；永远不要手动复制类型
 
-### 2. Schema Design (CRITICAL)
+### 2. 模式设计（CRITICAL）
 
-- `schema-object-unknowns` — `z.object()` strips unknown keys; use `strictObject` or `looseObject`
-- `schema-union-discriminated` — Use `z.discriminatedUnion()` for tagged unions, not `z.union()`
-- `schema-coercion-pitfalls` — `z.coerce.boolean()` makes `"false"` → `true`; use `z.stringbool()`
-- `schema-recursive-types` — Use getter pattern for recursive schemas; `z.lazy()` is removed in v4
+- `schema-object-unknowns` — `z.object()` 剥离未知键；使用 `strictObject` 或 `looseObject`
+- `schema-union-discriminated` — 对带标签的联合使用 `z.discriminatedUnion()`，而不是 `z.union()`
+- `schema-coercion-pitfalls` — `z.coerce.boolean()` 使 `"false"` → `true`；使用 `z.stringbool()`
+- `schema-recursive-types` — 对递归模式使用 getter 模式；`z.lazy()` 在 v4 中已移除
 
-### 3. Refinements & Transforms (HIGH)
+### 3. 精化与转换（HIGH）
 
-- `refine-never-throw` — Never throw inside `.refine()` or `.transform()`; use `ctx.addIssue()`
-- `refine-vs-transform` — `.refine()` for validation, `.transform()` for conversion, `.pipe()` for staging
-- `refine-cross-field` — `.superRefine()` on parent object for cross-field validation with `path`
+- `refine-never-throw` — 永远不要在 `.refine()` 或 `.transform()` 中抛出异常；使用 `ctx.addIssue()`
+- `refine-vs-transform` — `.refine()` 用于验证，`.transform()` 用于转换，`.pipe()` 用于分阶段
+- `refine-cross-field` — 在父对象上使用 `.superRefine()` 进行跨字段验证，使用 `path`
 
-### 4. Error Handling (HIGH)
+### 4. 错误处理（HIGH）
 
-- `error-custom-messages` — Use v4 `error` parameter; `required_error`/`invalid_type_error` are removed
-- `error-formatting` — `z.flattenError()` for forms, `z.treeifyError()` for nested; `formatError` deprecated
-- `error-input-security` — Never use `reportInput: true` in production; leaks sensitive data
+- `error-custom-messages` — 使用 v4 的 `error` 参数；`required_error`/`invalid_type_error` 已移除
+- `error-formatting` — 对表单使用 `z.flattenError()`，对嵌套使用 `z.treeifyError()`；`formatError` 已弃用
+- `error-input-security` — 在生产中永远不要使用 `reportInput: true`；泄漏敏感数据
 
-### 5. Performance & Composition (MEDIUM)
+### 5. 性能与组合（MEDIUM）
 
-- `perf-extend-spread` — Use `{ ...Schema.shape }` spread over chained `.extend()` for large schemas
-- `perf-reuse-schemas` — Define once, derive with `.pick()`, `.omit()`, `.partial()`
-- `perf-zod-mini` — Use `zod/v4/mini` (1.88kb) for bundle-critical client apps
+- `perf-extend-spread` — 对大型模式使用 `{ ...Schema.shape }` 展开而不是链式 `.extend()`
+- `perf-reuse-schemas` — 定义一次，使用 `.pick()`、`.omit()`、`.partial()` 派生
+- `perf-zod-mini` — 对包大小关键型客户端应用使用 `zod/v4/mini`（1.88kb）
 
-### 6. v4 Migration (MEDIUM)
+### 6. v4 迁移（MEDIUM）
 
-- `migrate-string-formats` — Use `z.email()`, `z.uuid()`, `z.url()` not `z.string().email()`
-- `migrate-native-enum` — Use unified `z.enum()` for TS enums; `z.nativeEnum()` is removed
-- `migrate-error-api` — Use `error` parameter everywhere; `message`, `errorMap` are removed
+- `migrate-string-formats` — 使用 `z.email()`、`z.uuid()`、`z.url()` 而不是 `z.string().email()`
+- `migrate-native-enum` — 对 TS 枚举使用统一的 `z.enum()`；`z.nativeEnum()` 已移除
+- `migrate-error-api` — 在所有地方使用 `error` 参数；`message`、`errorMap` 已移除
 
-### 7. Advanced Patterns (MEDIUM)
+### 7. 高级模式（MEDIUM）
 
-- `pattern-branded-types` — `.brand<"Name">()` for nominal typing (USD vs EUR)
-- `pattern-codecs` — `z.codec()` for bidirectional transforms (parse + serialize)
-- `pattern-pipe` — `.pipe()` for staged parsing (string → number → validate range)
+- `pattern-branded-types` — `.brand<"Name">()` 用于名义类型（USD vs EUR）
+- `pattern-codecs` — `z.codec()` 用于双向转换（解析 + 序列化）
+- `pattern-pipe` — `.pipe()` 用于分阶段解析（字符串 → 数字 → 验证范围）
 
-### 8. Architecture & Boundaries (CRITICAL/HIGH)
+### 8. 架构与边界（CRITICAL/HIGH）
 
-- `arch-boundary-parsing` — Parse at system boundaries (API handler, env, form, fetch); pass typed data to domain logic
-- `arch-schema-organization` — Co-locate schemas with their boundary layer; domain types use `z.infer`
-- `arch-schema-versioning` — Additive changes only for non-breaking evolution; new fields use `.optional()`
+- `arch-boundary-parsing` — 在系统边界解析（API 处理器、环境、表单、fetch）；将类型化数据传递给领域逻辑
+- `arch-schema-organization` — 将模式与其边界层放在一起；领域类型使用 `z.infer`
+- `arch-schema-versioning` — 仅进行非破坏性演进的加法更改；新字段使用 `.optional()`
 
-### 9. Observability (HIGH/MEDIUM)
+### 9. 可观察性（HIGH/MEDIUM）
 
-- `observe-structured-errors` — Use `z.flattenError()` for compact structured logs with request correlation IDs
-- `observe-error-metrics` — `trackedSafeParse()` wrapper to increment counters per schema and field on failure
+- `observe-structured-errors` — 使用 `z.flattenError()` 进行紧凑的结构化日志记录，带请求关联 ID
+- `observe-error-metrics` — `trackedSafeParse()` 包装器，用于在失败时按模式和字段递增计数器
 
-## Schema Types Quick Reference
+## 模式类型快速参考
 
-| Type | Syntax |
-|------|--------|
-| String | `z.string()` |
-| Number | `z.number()`, `z.int()`, `z.float()` |
-| Boolean | `z.boolean()` |
-| BigInt | `z.bigint()` |
-| Date | `z.date()` |
-| Undefined | `z.undefined()` |
-| Null | `z.null()` |
-| Void | `z.void()` |
-| Any | `z.any()` |
-| Unknown | `z.unknown()` |
-| Never | `z.never()` |
-| Literal | `z.literal("foo")`, `z.literal(42)` |
-| Enum | `z.enum(["a", "b"])`, `z.enum(TSEnum)` |
-| Email | `z.email()` |
+| 类型 | 语法 |
+|------|------|
+| 字符串 | `z.string()` |
+| 数字 | `z.number()`, `z.int()`, `z.float()` |
+| 布尔值 | `z.boolean()` |
+| 大整数 | `z.bigint()` |
+| 日期 | `z.date()` |
+| 未定义 | `z.undefined()` |
+| 空值 | `z.null()` |
+| 空值 | `z.void()` |
+| 任意 | `z.any()` |
+| 未知 | `z.unknown()` |
+| 从不 | `z.never()` |
+| 字面量 | `z.literal("foo")`, `z.literal(42)` |
+| 枚举 | `z.enum(["a", "b"])`, `z.enum(TSEnum)` |
+| 邮箱 | `z.email()` |
 | URL | `z.url()` |
 | UUID | `z.uuid()` |
-| String→Bool | `z.stringbool()` |
-| ISO DateTime | `z.iso.datetime()` |
-| File | `z.file()` |
+| 字符串→布尔值 | `z.stringbool()` |
+| ISO 日期时间 | `z.iso.datetime()` |
+| 文件 | `z.file()` |
 | JSON | `z.json()` |
-| Array | `z.array(schema)` |
-| Tuple | `z.tuple([a, b])` |
-| Object | `z.object({})` |
-| Strict Object | `z.strictObject({})` |
-| Loose Object | `z.looseObject({})` |
-| Record | `z.record(keySchema, valueSchema)` |
-| Map | `z.map(keySchema, valueSchema)` |
-| Set | `z.set(schema)` |
-| Union | `z.union([a, b])` |
-| Disc. Union | `z.discriminatedUnion("key", [...])` |
-| Intersection | `z.intersection(a, b)` |
+| 数组 | `z.array(schema)` |
+| 元组 | `z.tuple([a, b])` |
+| 对象 | `z.object({})` |
+| 严格对象 | `z.strictObject({})` |
+| 宽松对象 | `z.looseObject({})` |
+| 记录 | `z.record(keySchema, valueSchema)` |
+| 映射 | `z.map(keySchema, valueSchema)` |
+| 集合 | `z.set(schema)` |
+| 联合 | `z.union([a, b])` |
+| 判别联合 | `z.discriminatedUnion("key", [...])` |
+| 交集 | `z.intersection(a, b)` |
 
-## How to Use
+## 如何使用
 
-Read individual rule files for detailed explanations and code examples:
+阅读单个规则文件以获取详细说明和代码示例：
 
 ```
 rules/parse-use-safeParse.md
 rules/schema-object-unknowns.md
 ```
 
-Each rule file contains:
+每个规则文件包含：
 
-- Brief explanation of why it matters
-- Incorrect code example with explanation
-- Correct code example with explanation
-- Additional context and decision tables
+- 简要说明为什么重要
+- 错误代码示例及说明
+- 正确代码示例及说明
+- 附加上下文和决策表
 
-## References
+## 参考
 
-| Priority | Reference | When to read |
-|----------|-----------|-------------|
-| 1 | `references/schema-types.md` | All primitives, string formats, numbers, enums, dates |
-| 2 | `references/parsing-and-inference.md` | parse, safeParse, z.infer, coercion |
-| 3 | `references/objects-and-composition.md` | Objects, arrays, unions, pick/omit/partial, recursive |
-| 4 | `references/refinements-and-transforms.md` | refine, superRefine, transform, pipe, defaults |
-| 5 | `references/error-handling.md` | ZodError, flattenError, treeifyError, error customization |
-| 6 | `references/advanced-features.md` | Codecs, branded types, JSON Schema, registries |
-| 7 | `references/anti-patterns.md` | Common mistakes with BAD/GOOD examples |
-| 8 | `references/boundary-architecture.md` | Where Zod fits: Express, tRPC, Next.js, React Hook Form, env, external APIs |
-| 9 | `references/linter-and-ci.md` | ESLint rules, CI schema snapshots, unused schema detection, circular deps |
+| 优先级 | 参考 | 何时阅读 |
+|--------|------|----------|
+| 1 | `references/schema-types.md` | 所有基本类型、字符串格式、数字、枚举、日期 |
+| 2 | `references/parsing-and-inference.md` | parse、safeParse、z.infer、强制转换 |
+| 3 | `references/objects-and-composition.md` | 对象、数组、联合、pick/omit/partial、递归 |
+| 4 | `references/refinements-and-transforms.md` | refine、superRefine、transform、pipe、默认值 |
+| 5 | `references/error-handling.md` | ZodError、flattenError、treeifyError、错误定制 |
+| 6 | `references/advanced-features.md` | 编解码器、品牌类型、JSON Schema、注册表 |
+| 7 | `references/anti-patterns.md` | 常见错误，包含 BAD/GOOD 示例 |
+| 8 | `references/boundary-architecture.md` | Zod 适用场景：Express、tRPC、Next.js、React Hook Form、环境、外部 API |
+| 9 | `references/linter-and-ci.md` | ESLint 规则、CI 模式快照、未使用模式检测、循环依赖 |
 
-## Full Compiled Document
+## 完整编译文档
 
-For the complete guide with all rules expanded: `AGENTS.md`
+有关所有规则扩展的完整指南：`AGENTS.md`

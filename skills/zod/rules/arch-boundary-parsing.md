@@ -1,20 +1,20 @@
 ---
-title: Parse at System Boundaries, Not in Domain Logic
+title: 在系统边界解析，而不是在领域逻辑中
 impact: CRITICAL
-description: Call safeParse() at entry points (API handlers, env startup, form resolvers, external fetches) and pass typed data inward. Domain logic receives typed values, not unknown.
+description: 在入口点（API处理器、环境启动、表单解析器、外部获取）调用 safeParse() 并将类型化数据向内传递。领域逻辑接收类型化值，而不是 unknown。
 tags: architecture, boundaries, parsing, safeParse, separation-of-concerns
 ---
 
-# Parse at System Boundaries, Not in Domain Logic
+# 在系统边界解析，而不是在领域逻辑中
 
-## Problem
+## 问题
 
-When `safeParse()` calls are scattered throughout domain logic, every function must handle `unknown` input and validation errors. This mixes parsing concerns with business logic, makes error handling inconsistent, and creates redundant validation.
+当 `safeParse()` 调用散布在领域逻辑中时，每个函数都必须处理 `unknown` 输入和验证错误。这将解析关注点与业务逻辑混合在一起，导致错误处理不一致，并创建冗余验证。
 
-## Incorrect
+## 错误做法
 
 ```typescript
-// BUG: domain logic handles unknown input and parsing
+// BUG: 领域逻辑处理未知输入和解析
 function calculateDiscount(data: unknown) {
   const result = OrderSchema.safeParse(data)
   if (!result.success) {
@@ -27,19 +27,19 @@ function calculateDiscount(data: unknown) {
   return 0
 }
 
-// BUG: service layer re-parses what was already validated
+// BUG: 服务层重新解析已经验证过的数据
 function processOrder(data: unknown) {
   const result = OrderSchema.safeParse(data)
   if (!result.success) return { error: "Invalid" }
-  const discount = calculateDiscount(data) // parses again!
+  const discount = calculateDiscount(data) // 再次解析！
   return { total: result.data.total - discount }
 }
 ```
 
-## Correct
+## 正确做法
 
 ```typescript
-// Parse ONCE at the boundary
+// 在边界解析一次
 app.post("/orders", (req, res) => {
   const result = OrderSchema.safeParse(req.body)
   if (!result.success) {
@@ -47,12 +47,12 @@ app.post("/orders", (req, res) => {
       errors: z.flattenError(result.error).fieldErrors,
     })
   }
-  // Pass typed data inward — no more unknown
+  // 传递类型化数据向内 - 不再有 unknown
   const response = processOrder(result.data)
   res.json(response)
 })
 
-// Domain logic receives typed data — no parsing needed
+// 领域逻辑接收类型化数据 - 不需要解析
 function calculateDiscount(order: Order): number {
   return order.total > 100 ? order.total * 0.1 : 0
 }
@@ -65,19 +65,19 @@ function processOrder(order: Order) {
 type Order = z.infer<typeof OrderSchema>
 ```
 
-## Decision Table: Where to Parse
+## 决策表：在哪里解析
 
-| Boundary | Where to call safeParse() |
+| 边界 | 在哪里调用 safeParse() |
 |----------|--------------------------|
-| Express/Fastify route | In the route handler, before calling service functions |
-| tRPC | `.input(Schema)` — framework parses for you |
-| Next.js Server Action | At the top of the action function, before any logic |
-| React Hook Form | `zodResolver(Schema)` — resolver parses on submit |
-| Environment variables | At app startup (e.g., `envSchema.parse(process.env)`) |
-| External API response | Immediately after `fetch()`, before using the data |
-| Database results | After query, if schema might drift from DB shape |
-| Message queue consumer | At the top of the handler, before processing |
+| Express/Fastify 路由 | 在路由处理器中，调用服务函数之前 |
+| tRPC | `.input(Schema)` - 框架为你解析 |
+| Next.js 服务器动作 | 在动作函数顶部，任何逻辑之前 |
+| React Hook Form | `zodResolver(Schema)` - 解析器在提交时解析 |
+| 环境变量 | 在应用启动时（例如 `envSchema.parse(process.env)`） |
+| 外部 API 响应 | 在 `fetch()` 之后立即，使用数据之前 |
+| 数据库结果 | 查询之后，如果模式可能与数据库形状不同步 |
+| 消息队列消费者 | 在处理器顶部，处理之前 |
 
-## Why
+## 为什么
 
-Parsing at the boundary means domain functions are pure — they accept typed values and return typed values. This eliminates redundant validation, centralizes error handling, and makes business logic easier to test (no need to construct invalid inputs). The boundary layer is the only place that deals with `unknown` data.
+在边界解析意味着领域函数是纯粹的——它们接受类型化值并返回类型化值。这消除了冗余验证，集中了错误处理，并使业务逻辑更容易测试（无需构造无效输入）。边界层是唯一处理 `unknown` 数据的地方。

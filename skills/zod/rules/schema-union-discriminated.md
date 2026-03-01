@@ -1,40 +1,40 @@
 ---
-title: Use Discriminated Unions
+title: 使用判别联合
 impact: CRITICAL
-description: Use z.discriminatedUnion() for tagged object unions instead of z.union().
+description: 对带标签的对象联合使用 z.discriminatedUnion() 而不是 z.union()。
 tags: union, discriminated, tagged, performance
 ---
 
-# Use Discriminated Unions
+# 使用判别联合
 
-## Problem
+## 问题
 
-`z.union()` tries each branch sequentially until one matches. For object unions with a shared discriminator field (like `type` or `kind`), this is slow and produces confusing error messages that show issues from every branch.
+`z.union()` 会顺序尝试每个分支，直到有一个匹配。对于具有共享判别字段（如 `type` 或 `kind`）的对象联合，这很慢并且会产生令人困惑的错误消息，显示每个分支的问题。
 
-## Incorrect
+## 错误示例
 
 ```typescript
-// BAD: tries each branch sequentially, error shows issues from all branches
+// 不好: 顺序尝试每个分支，错误显示所有分支的问题
 const Shape = z.union([
   z.object({ type: z.literal("circle"), radius: z.number() }),
   z.object({ type: z.literal("square"), side: z.number() }),
   z.object({ type: z.literal("rect"), width: z.number(), height: z.number() }),
 ])
-// Error on invalid input: "Invalid input" (unhelpful — which branch failed?)
+// 无效输入时的错误: "Invalid input"（无帮助 — 哪个分支失败了？）
 ```
 
-## Correct
+## 正确示例
 
 ```typescript
-// GOOD: uses discriminator for O(1) dispatch, targeted errors
+// 正确: 使用判别器进行 O(1) 分发，有针对性的错误
 const Shape = z.discriminatedUnion("type", [
   z.object({ type: z.literal("circle"), radius: z.number() }),
   z.object({ type: z.literal("square"), side: z.number() }),
   z.object({ type: z.literal("rect"), width: z.number(), height: z.number() }),
 ])
-// Error: "Invalid discriminator. Expected 'circle' | 'square' | 'rect'"
+// 错误: "Invalid discriminator. Expected 'circle' | 'square' | 'rect'"
 ```
 
-## Why
+## 原因
 
-`discriminatedUnion` checks the discriminator field first, then only validates the matching branch. This gives O(1) dispatch instead of O(n) sequential checking, and error messages target the actual problem instead of listing every branch's failures.
+`discriminatedUnion` 首先检查判别字段，然后只验证匹配的分支。这提供了 O(1) 的分发而不是 O(n) 的顺序检查，并且错误消息针对实际问题而不是列出每个分支的失败。

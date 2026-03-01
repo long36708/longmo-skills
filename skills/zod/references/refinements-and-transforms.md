@@ -1,49 +1,49 @@
-# Refinements and Transforms Reference
+# 精化和转换参考
 
 ## .refine(fn, opts)
 
-Custom validation that returns a boolean.
+自定义验证，返回布尔值。
 
 ```typescript
 const EvenNumber = z.number().refine((n) => n % 2 === 0, {
-  error: "Must be even",
+  error: "必须是偶数",
 })
 
-// Async refinement — must use parseAsync/safeParseAsync
+// 异步精化 — 必须使用 parseAsync/safeParseAsync
 const UniqueEmail = z.email().refine(
   async (email) => !(await db.exists(email)),
-  { error: "Email taken" }
+  { error: "邮箱已被占用" }
 )
 ```
 
 ## .superRefine((val, ctx) => void)
 
-Advanced validation with multiple issues and path targeting.
+高级验证，支持多个问题和路径定位。
 
 ```typescript
 const Password = z.string().superRefine((val, ctx) => {
   if (val.length < 8) {
     ctx.addIssue({
       code: "custom",
-      message: "Must be at least 8 characters",
+      message: "必须至少8个字符",
     })
   }
   if (!/[A-Z]/.test(val)) {
     ctx.addIssue({
       code: "custom",
-      message: "Must contain uppercase letter",
+      message: "必须包含大写字母",
     })
   }
   if (!/[0-9]/.test(val)) {
     ctx.addIssue({
       code: "custom",
-      message: "Must contain a number",
+      message: "必须包含数字",
     })
   }
 })
 ```
 
-### Cross-Field Validation
+### 跨字段验证
 
 ```typescript
 const Form = z
@@ -55,8 +55,8 @@ const Form = z
     if (data.password !== data.confirm) {
       ctx.addIssue({
         code: "custom",
-        path: ["confirm"], // targets the confirm field
-        message: "Passwords don't match",
+        path: ["confirm"], // 定位到 confirm 字段
+        message: "密码不匹配",
       })
     }
   })
@@ -64,13 +64,13 @@ const Form = z
 
 ## .check(...checks)
 
-Functional-style checks (also available in full Zod, required in Zod Mini).
+函数式检查（在完整 Zod 中也可用，在 Zod Mini 中必需）。
 
 ```typescript
-// Full Zod
+// 完整 Zod
 z.string().check(
-  z.minLength(8, "Too short"),
-  z.maxLength(100, "Too long"),
+  z.minLength(8, "太短"),
+  z.maxLength(100, "太长"),
 )
 
 // Zod Mini
@@ -80,21 +80,21 @@ z.string().check(z.minLength(8), z.maxLength(100))
 
 ## .transform(fn)
 
-Converts the value to a new type (one-way).
+将值转换为新类型（单向转换）。
 
 ```typescript
 const StringToNumber = z.string().transform((s) => parseInt(s, 10))
-// Input: string, Output: number
+// 输入: string, 输出: number
 
 const Trimmed = z.string().transform((s) => s.trim())
-// Input: string, Output: string (trimmed)
+// 输入: string, 输出: string (去除空格)
 ```
 
-Never throw inside transforms — use `.refine()` first for validation.
+不要在转换函数内部抛出错误 — 先使用 `.refine()` 进行验证。
 
 ## .pipe(schema)
 
-Staged parsing — output of current schema becomes input of next.
+分阶段解析 — 当前模式的输出成为下一个模式的输入。
 
 ```typescript
 const PortNumber = z
@@ -102,14 +102,14 @@ const PortNumber = z
   .pipe(z.coerce.number())
   .pipe(z.int().min(1).max(65535))
 
-// Stage 1: validate string
-// Stage 2: coerce to number
-// Stage 3: validate integer in range
+// 阶段1: 验证字符串
+// 阶段2: 强制转换为数字
+// 阶段3: 验证整数范围
 ```
 
 ## .preprocess(fn, schema)
 
-Transform input before parsing. Legacy — prefer `.pipe()`.
+在解析前转换输入。遗留方法 — 推荐使用 `.pipe()`。
 
 ```typescript
 const TrimmedString = z.preprocess(
@@ -120,16 +120,16 @@ const TrimmedString = z.preprocess(
 
 ## .overwrite(fn)
 
-Modify value in place without changing type.
+原地修改值而不改变类型。
 
 ```typescript
 const NormalizedEmail = z.email().overwrite((email) => email.toLowerCase())
-// Input: string, Output: string (lowercased)
+// 输入: string, 输出: string (小写)
 ```
 
 ## .default(value)
 
-Provides default for undefined input. Applied after validation.
+为 undefined 输入提供默认值。在验证后应用。
 
 ```typescript
 const Port = z.number().default(3000)
@@ -137,7 +137,7 @@ Port.parse(undefined) // 3000
 Port.parse(8080)      // 8080
 ```
 
-Input type becomes optional:
+输入类型变为可选：
 ```typescript
 type Input = z.input<typeof Port>   // number | undefined
 type Output = z.infer<typeof Port>  // number
@@ -145,26 +145,26 @@ type Output = z.infer<typeof Port>  // number
 
 ## .prefault(value)
 
-Provides default before validation.
+在验证前提供默认值。
 
 ```typescript
-const Name = z.string().min(1).prefault("Anonymous")
-Name.parse(undefined) // "Anonymous" (validated against min(1) first)
+const Name = z.string().min(1).prefault("匿名")
+Name.parse(undefined) // "匿名" (先验证 min(1))
 ```
 
 ## .catch(value)
 
-Fallback on any error — never fails.
+任何错误时回退 — 永远不会失败。
 
 ```typescript
 const SafeNumber = z.number().catch(0)
-SafeNumber.parse("not a number") // 0
-SafeNumber.parse(42)             // 42
+SafeNumber.parse("不是数字") // 0
+SafeNumber.parse(42)         // 42
 ```
 
 ## .apply(fn)
 
-Apply a function that returns a schema.
+应用返回模式的函数。
 
 ```typescript
 const Clamped = z.number().apply((schema) =>
@@ -172,34 +172,34 @@ const Clamped = z.number().apply((schema) =>
 )
 ```
 
-## Async Refinements and Transforms
+## 异步精化和转换
 
-When any refinement or transform is async, you must use `parseAsync()` or `safeParseAsync()`.
+当任何精化或转换是异步时，必须使用 `parseAsync()` 或 `safeParseAsync()`。
 
 ```typescript
 const Schema = z.object({
   email: z.email().refine(
     async (email) => !(await db.exists(email)),
-    { error: "Taken" }
+    { error: "已被占用" }
   ),
   avatar: z.url().transform(
     async (url) => await downloadImage(url)
   ),
 })
 
-// REQUIRED: async parse
+// 必需: 异步解析
 const result = await Schema.safeParseAsync(data)
 ```
 
-## Issue Codes for ctx.addIssue()
+## ctx.addIssue() 的问题代码
 
-| Code | Use When |
+| 代码 | 使用时机 |
 |------|----------|
-| `"custom"` | Custom validation logic |
-| `"invalid_type"` | Wrong input type |
-| `"too_small"` | Below minimum (length, value, size) |
-| `"too_big"` | Above maximum |
-| `"invalid_string"` | String format validation |
-| `"invalid_enum_value"` | Value not in enum |
-| `"unrecognized_keys"` | Unknown keys in strict object |
-| `"invalid_union"` | No union branch matched |
+| `"custom"` | 自定义验证逻辑 |
+| `"invalid_type"` | 错误的输入类型 |
+| `"too_small"` | 低于最小值（长度、值、大小） |
+| `"too_big"` | 高于最大值 |
+| `"invalid_string"` | 字符串格式验证 |
+| `"invalid_enum_value"` | 值不在枚举中 |
+| `"unrecognized_keys"` | 严格对象中的未知键 |
+| `"invalid_union"` | 没有联合分支匹配 |

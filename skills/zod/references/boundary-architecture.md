@@ -1,12 +1,12 @@
-# Boundary Architecture — Where Zod Fits
+# 边界架构 — Zod 适用场景
 
-## Overview
+## 概述
 
-Zod belongs at **system boundaries** — the points where your application receives data it doesn't control. Parse once at the boundary, then pass typed data inward. Domain logic should never see `unknown`.
+Zod 属于**系统边界**——应用程序接收不受控制的数据的地方。在边界解析一次，然后将类型化数据向内传递。领域逻辑永远不应该看到 `unknown`。
 
-## Express / Fastify — Route Handler vs Middleware
+## Express / Fastify — 路由处理器 vs 中间件
 
-### In the Route Handler (Recommended for Most Cases)
+### 在路由处理器中（推荐用于大多数情况）
 
 ```typescript
 app.post("/api/users", (req, res) => {
@@ -21,7 +21,7 @@ app.post("/api/users", (req, res) => {
 })
 ```
 
-### As Middleware (For Shared Validation Logic)
+### 作为中间件（用于共享验证逻辑）
 
 ```typescript
 function validate<T extends z.ZodType>(schema: T) {
@@ -32,35 +32,35 @@ function validate<T extends z.ZodType>(schema: T) {
         errors: z.flattenError(result.error).fieldErrors,
       })
     }
-    req.body = result.data // typed from here on
+    req.body = result.data // 从这里开始类型化
     next()
   }
 }
 
 app.post("/api/users", validate(CreateUserSchema), (req, res) => {
-  // req.body is already validated and typed
+  // req.body 已经验证和类型化
   const user = await createUser(req.body)
   res.status(201).json(user)
 })
 ```
 
-### When to Use Each
+### 何时使用每种方式
 
-| Approach | Use When |
-|----------|----------|
-| Route handler | Schema is specific to one route, custom error responses needed |
-| Middleware | Same schema/error format across many routes |
+| 方法 | 使用时机 |
+|------|----------|
+| 路由处理器 | 模式特定于一个路由，需要自定义错误响应 |
+| 中间件 | 跨多个路由使用相同模式/错误格式 |
 
-## tRPC — `.input()` Parsing
+## tRPC — `.input()` 解析
 
-tRPC handles boundary parsing for you via `.input()`:
+tRPC 通过 `.input()` 为您处理边界解析：
 
 ```typescript
 export const userRouter = router({
   create: publicProcedure
-    .input(CreateUserSchema) // tRPC calls safeParse internally
+    .input(CreateUserSchema) // tRPC 内部调用 safeParse
     .mutation(async ({ input }) => {
-      // input is fully typed — z.infer<typeof CreateUserSchema>
+      // input 完全类型化 — z.infer<typeof CreateUserSchema>
       return createUser(input)
     }),
 
@@ -72,7 +72,7 @@ export const userRouter = router({
 })
 ```
 
-You don't call `safeParse()` yourself — tRPC does it and returns a typed error response automatically.
+您不需要自己调用 `safeParse()` — tRPC 会自动执行并返回类型化的错误响应。
 
 ## Next.js Server Actions
 
@@ -85,7 +85,7 @@ const CreatePostSchema = z.object({
 })
 
 export async function createPost(formData: FormData) {
-  // Parse at the top of the action
+  // 在操作顶部解析
   const result = CreatePostSchema.safeParse({
     title: formData.get("title"),
     body: formData.get("body"),
@@ -95,7 +95,7 @@ export async function createPost(formData: FormData) {
     return { errors: z.flattenError(result.error).fieldErrors }
   }
 
-  // Typed from here on
+  // 从这里开始类型化
   await db.posts.create({ data: result.data })
   revalidatePath("/posts")
 }
@@ -122,7 +122,7 @@ export async function POST(request: Request) {
 
 ## React Hook Form — zodResolver
 
-The form library handles the boundary:
+表单库处理边界：
 
 ```typescript
 import { useForm } from "react-hook-form"
@@ -141,7 +141,7 @@ function ProfileEditor() {
   })
 
   const onSubmit = (data: ProfileForm) => {
-    // data is already validated — no safeParse needed
+    // data 已经验证 — 不需要 safeParse
     updateProfile(data)
   }
 
@@ -154,14 +154,14 @@ function ProfileEditor() {
 }
 ```
 
-## Environment Variables — Startup Parsing
+## 环境变量 — 启动时解析
 
-Parse env vars once at application startup. Fail fast if the environment is misconfigured.
+在应用程序启动时解析环境变量一次。如果环境配置错误，快速失败。
 
-### Manual Approach
+### 手动方法
 
 ```typescript
-// config/env.ts — parsed at import time
+// config/env.ts — 导入时解析
 const EnvSchema = z.object({
   DATABASE_URL: z.url(),
   API_KEY: z.string().min(1),
@@ -170,10 +170,10 @@ const EnvSchema = z.object({
 })
 
 export const env = EnvSchema.parse(process.env)
-// App crashes at startup if env is invalid — this is intentional
+// 如果环境无效，应用程序在启动时崩溃 — 这是故意的
 ```
 
-### With t3-env
+### 使用 t3-env
 
 ```typescript
 import { createEnv } from "@t3-oss/env-nextjs"
@@ -194,9 +194,9 @@ export const env = createEnv({
 })
 ```
 
-## External API Responses
+## 外部 API 响应
 
-Always validate data coming from external services — their schemas can change without warning.
+始终验证来自外部服务的数据——它们的模式可能会在无预警的情况下更改。
 
 ```typescript
 const WeatherResponse = z.object({
@@ -209,23 +209,23 @@ async function getWeather(city: string) {
   const res = await fetch(`https://api.weather.example/v1/${city}`)
   const json = await res.json()
 
-  // Parse at the boundary — don't trust external data
+  // 在边界解析 — 不要信任外部数据
   const result = WeatherResponse.safeParse(json)
   if (!result.success) {
     logger.warn("weather_api_schema_mismatch", {
       schema: "WeatherResponse",
       fieldErrors: z.flattenError(result.error).fieldErrors,
     })
-    throw new ExternalServiceError("Weather API returned unexpected shape")
+    throw new ExternalServiceError("天气 API 返回了意外的形状")
   }
 
-  return result.data // typed Weather
+  return result.data // 类型化的 Weather
 }
 ```
 
-## Database Layer
+## 数据库层
 
-Parse DB results when the schema might drift from the actual DB shape (e.g., after migrations, with untyped ORMs, or with raw SQL).
+当模式可能与实际数据库形状分离时解析数据库结果（例如，迁移后、使用非类型化 ORM 或原始 SQL）。
 
 ```typescript
 const UserRow = z.object({
@@ -237,22 +237,22 @@ const UserRow = z.object({
 
 async function getUserById(id: string) {
   const row = await db.query("SELECT * FROM users WHERE id = $1", [id])
-  // Validate if using raw SQL or untyped ORM
+  // 如果使用原始 SQL 或非类型化 ORM，则进行验证
   return UserRow.parse(row)
 }
 ```
 
-If you use a fully typed ORM like Prisma or Drizzle that generates types from your schema, additional Zod parsing of DB results is usually unnecessary.
+如果您使用完全类型化的 ORM（如 Prisma 或 Drizzle），它会从您的模式生成类型，通常不需要对数据库结果进行额外的 Zod 解析。
 
-## Summary: Boundary Layer Checklist
+## 总结：边界层检查清单
 
-| Boundary | Who Parses | Schema Location |
-|----------|------------|-----------------|
-| Express/Fastify route | Your middleware or handler | `api/[resource]/schemas.ts` |
-| tRPC procedure | tRPC via `.input()` | Inline or co-located |
-| Next.js Server Action | Top of action function | Co-located with action |
+| 边界 | 谁解析 | 模式位置 |
+|------|--------|----------|
+| Express/Fastify 路由 | 您的中间件或处理器 | `api/[resource]/schemas.ts` |
+| tRPC 过程 | tRPC 通过 `.input()` | 内联或放在一起 |
+| Next.js Server Action | 操作函数顶部 | 与操作放在一起 |
 | React Hook Form | zodResolver | `features/[name]/form-schema.ts` |
-| Env vars | Startup (parse, not safeParse) | `config/env.ts` |
-| External API response | After fetch, before use | Co-located with API client |
-| Database results | After query (if untyped) | Co-located with data access |
-| Message queue | Top of consumer handler | Co-located with consumer |
+| 环境变量 | 启动时（parse，非 safeParse） | `config/env.ts` |
+| 外部 API 响应 | 获取后，使用前 | 与 API 客户端放在一起 |
+| 数据库结果 | 查询后（如果非类型化） | 与数据访问放在一起 |
+| 消息队列 | 消费者处理器顶部 | 与消费者放在一起 |

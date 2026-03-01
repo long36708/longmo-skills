@@ -1,8 +1,8 @@
-# Advanced Features Reference
+# 高级功能参考
 
-## Codecs
+## 编解码器
 
-Bidirectional transforms — decode (parse) and encode (serialize).
+双向转换——解码（解析）和编码（序列化）。
 
 ```typescript
 const DateCodec = z.codec(z.iso.datetime(), z.date(), {
@@ -14,30 +14,30 @@ const parsed = DateCodec.parse("2024-01-01T00:00:00Z") // Date
 const serialized = DateCodec.encode(parsed)              // "2024-01-01T00:00:00.000Z"
 ```
 
-### Built-in Codecs
+### 内置编解码器
 
 ```typescript
-// ISO datetime codec (string ↔ Date)
+// ISO 日期时间编解码器（string ↔ Date）
 z.iso.datetime()
 
-// Use with codec for custom decode/encode
+// 使用 codec 进行自定义解码/编码
 z.codec(z.iso.datetime(), z.date(), {
   decode: (s) => new Date(s),
   encode: (d) => d.toISOString(),
 })
 ```
 
-### When to Use Codecs vs Transforms
+### 何时使用编解码器 vs 转换器
 
 | | `.transform()` | `z.codec()` |
 |---|---|---|
-| Direction | One-way (input → output) | Bidirectional |
-| Use when | Only parsing | Round-trip (parse + serialize) |
-| Encoding | Not supported | `schema.encode(value)` |
+| 方向 | 单向（输入 → 输出） | 双向 |
+| 使用时机 | 仅解析 | 往返（解析 + 序列化） |
+| 编码 | 不支持 | `schema.encode(value)` |
 
-## Branded Types
+## 品牌类型
 
-Nominal typing — prevents mixing structurally identical types.
+名义类型——防止混合结构相同的类型。
 
 ```typescript
 const USD = z.number().brand<"USD">()
@@ -46,31 +46,31 @@ const EUR = z.number().brand<"EUR">()
 type USD = z.infer<typeof USD> // number & { __brand: "USD" }
 type EUR = z.infer<typeof EUR> // number & { __brand: "EUR" }
 
-// TypeScript prevents mixing
+// TypeScript 防止混合
 function pay(amount: USD) { /* ... */ }
 const euros = EUR.parse(100)
-pay(euros) // TypeScript error!
+pay(euros) // TypeScript 错误！
 ```
 
-### Common Use Cases
+### 常见用例
 
 ```typescript
-// Prevent ID mixing
+// 防止 ID 混合
 const UserId = z.string().brand<"UserId">()
 const PostId = z.string().brand<"PostId">()
 
-// Type-safe units
+// 类型安全的单位
 const Meters = z.number().brand<"Meters">()
 const Feet = z.number().brand<"Feet">()
 
-// Validated strings
+// 验证过的字符串
 const Email = z.email().brand<"Email">()
 const Slug = z.string().regex(/^[a-z0-9-]+$/).brand<"Slug">()
 ```
 
 ## .readonly()
 
-Output type becomes `Readonly<T>`.
+输出类型变为 `Readonly<T>`。
 
 ```typescript
 const Config = z.object({
@@ -82,33 +82,33 @@ type Config = z.infer<typeof Config>
 // Readonly<{ host: string; port: number }>
 ```
 
-## Metadata and Registries
+## 元数据和注册表
 
 ### .meta()
 
-Attach arbitrary metadata to schemas.
+向模式附加任意元数据。
 
 ```typescript
 const UserSchema = z.object({
-  name: z.string().meta({ label: "Full Name", placeholder: "Enter name" }),
-  email: z.email().meta({ label: "Email Address" }),
+  name: z.string().meta({ label: "全名", placeholder: "输入姓名" }),
+  email: z.email().meta({ label: "邮箱地址" }),
 })
 ```
 
-### Registries
+### 注册表
 
 ```typescript
-// Global registry
+// 全局注册表
 z.globalRegistry.register(UserSchema, {
   id: "User",
-  description: "User account schema",
+  description: "用户账户模式",
 })
 
-// Custom typed registry
+// 自定义类型化注册表
 const uiRegistry = z.registry<{ label: string; widget: string }>()
 uiRegistry.register(UserSchema.shape.name, {
-  label: "Name",
-  widget: "text-input",
+  label: "姓名",
+  widget: "文本输入",
 })
 ```
 
@@ -116,7 +116,7 @@ uiRegistry.register(UserSchema.shape.name, {
 
 ### z.toJSONSchema(schema)
 
-Convert Zod schema to JSON Schema.
+将 Zod 模式转换为 JSON Schema。
 
 ```typescript
 const jsonSchema = z.toJSONSchema(UserSchema)
@@ -132,7 +132,7 @@ const jsonSchema = z.toJSONSchema(UserSchema)
 
 ### z.fromJSONSchema(jsonSchema)
 
-Convert JSON Schema to Zod schema.
+将 JSON Schema 转换为 Zod 模式。
 
 ```typescript
 const zodSchema = z.fromJSONSchema({
@@ -147,12 +147,12 @@ const zodSchema = z.fromJSONSchema({
 
 ## z.function()
 
-Validate function arguments and return type.
+验证函数参数和返回类型。
 
 ```typescript
 const MyFunc = z.function(
-  z.tuple([z.string(), z.number()]), // args
-  z.boolean()                         // return type
+  z.tuple([z.string(), z.number()]), // 参数
+  z.boolean()                         // 返回类型
 )
 
 type MyFunc = z.infer<typeof MyFunc>
@@ -161,20 +161,20 @@ type MyFunc = z.infer<typeof MyFunc>
 
 ## z.instanceof()
 
-Check if value is an instance of a class.
+检查值是否是类的实例。
 
 ```typescript
 const ErrorSchema = z.instanceof(Error)
-ErrorSchema.parse(new Error("test")) // passes
-ErrorSchema.parse("not an error")    // fails
+ErrorSchema.parse(new Error("test")) // 通过
+ErrorSchema.parse("not an error")    // 失败
 ```
 
-## Template Literals
+## 模板字面量
 
 ```typescript
 const UserId = z.templateLiteral([z.literal("user_"), z.string()])
-// Matches: "user_abc", "user_123"
-// Rejects: "abc", "admin_123"
+// 匹配："user_abc", "user_123"
+// 拒绝："abc", "admin_123"
 
 const Route = z.templateLiteral([
   z.literal("/api/"),
@@ -182,12 +182,12 @@ const Route = z.templateLiteral([
   z.literal("/"),
   z.string(),
 ])
-// Matches: "/api/users/123", "/api/posts/abc"
+// 匹配："/api/users/123", "/api/posts/abc"
 ```
 
-## Standard Schema
+## 标准模式
 
-Zod schemas implement the Standard Schema interface, making them compatible with any library that supports it.
+Zod 模式实现了标准模式接口，使它们与任何支持该接口的库兼容。
 
 ```typescript
 import type { StandardSchema } from "@standard-schema/spec"
@@ -196,6 +196,6 @@ function validate(schema: StandardSchema, data: unknown) {
   return schema["~standard"].validate(data)
 }
 
-// Works with Zod schemas
+// 与 Zod 模式配合使用
 validate(UserSchema, data)
 ```

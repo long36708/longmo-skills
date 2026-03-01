@@ -1,42 +1,42 @@
 ---
-title: Pipe for Staged Parsing
+title: 用于分阶段解析的管道
 impact: MEDIUM
-description: Use .pipe() to chain validation stages. Parse string → coerce number → validate range.
+description: 使用.pipe()链接验证阶段。解析字符串 → 强制转换为数字 → 验证范围。
 tags: pipe, staged, coerce, chain
 ---
 
-# Pipe for Staged Parsing
+# 用于分阶段解析的管道
 
-## Problem
+## 问题
 
-Complex validation chains that coerce and validate in multiple stages become messy when done in a single transform. Each stage should parse the output of the previous stage.
+在单个转换中完成多阶段强制转换和验证的复杂验证链变得混乱。每个阶段应该解析前一个阶段的输出。
 
-## Incorrect
+## 错误做法
 
 ```typescript
-// BAD: everything in one transform — no intermediate validation
+// 错误：所有内容在一个transform中 - 没有中间验证
 const PortNumber = z.string().transform((val) => {
   const n = parseInt(val, 10)
-  if (isNaN(n)) throw new Error("Not a number") // wrong: shouldn't throw
-  if (n < 1 || n > 65535) throw new Error("Invalid port") // wrong: shouldn't throw
+  if (isNaN(n)) throw new Error("Not a number") // 错误：不应该抛出
+  if (n < 1 || n > 65535) throw new Error("Invalid port") // 错误：不应该抛出
   return n
 })
 ```
 
-## Correct
+## 正确做法
 
 ```typescript
-// GOOD: staged parsing with pipe
+// 正确：使用pipe进行分阶段解析
 const PortNumber = z
   .string()
-  .pipe(z.coerce.number()) // stage 1: string → number
-  .pipe(z.int().min(1).max(65535)) // stage 2: validate range
+  .pipe(z.coerce.number()) // 阶段1：string → number
+  .pipe(z.int().min(1).max(65535)) // 阶段2：验证范围
 
 PortNumber.parse("8080") // 8080
-PortNumber.parse("abc") // ZodError: stage 1 fails
-PortNumber.parse("99999") // ZodError: stage 2 fails
+PortNumber.parse("abc") // ZodError：阶段1失败
+PortNumber.parse("99999") // ZodError：阶段2失败
 ```
 
-## Why
+## 为什么
 
-`.pipe()` feeds the output of one schema into another. Each stage produces proper Zod errors on failure. This is cleaner than manual transforms with throws, and each stage's type is properly inferred.
+`.pipe()` 将一个模式的输出馈送到另一个模式中。每个阶段在失败时产生适当的Zod错误。这比使用throws的手动转换更清晰，并且每个阶段的类型都正确推断。

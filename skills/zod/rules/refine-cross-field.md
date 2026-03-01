@@ -1,30 +1,30 @@
 ---
-title: Cross-Field Validation
+title: 跨字段验证
 impact: HIGH
-description: Use .superRefine() on the parent object for cross-field validation with path targeting.
+description: 在父对象上使用 .superRefine() 进行跨字段验证，并使用路径定位错误。
 tags: superRefine, cross-field, password, confirm
 ---
 
-# Cross-Field Validation
+# 跨字段验证
 
-## Problem
+## 问题
 
-Individual field refinements can't access sibling fields. You need to validate at the parent object level and target errors to specific fields using `path`.
+单个字段的精化无法访问同级字段。您需要在父对象级别进行验证，并使用 `path` 将错误定位到特定字段。
 
-## Incorrect
+## 错误示例
 
 ```typescript
-// BUG: individual field can't access siblings
+// BUG: 单个字段无法访问同级字段
 const Form = z.object({
   password: z.string().min(8),
   confirm: z.string().refine(
-    (val) => val === ???, // can't access password here
-    { error: "Passwords don't match" }
+    (val) => val === ???, // 这里无法访问 password 字段
+    { error: "密码不匹配" }
   ),
 })
 ```
 
-## Correct
+## 正确示例
 
 ```typescript
 const Form = z
@@ -36,15 +36,15 @@ const Form = z
     if (data.password !== data.confirm) {
       ctx.addIssue({
         code: "custom",
-        path: ["confirm"], // error targets the confirm field
-        message: "Passwords don't match",
+        path: ["confirm"], // 错误定位到 confirm 字段
+        message: "密码不匹配",
       })
     }
   })
 
-// Error appears on the "confirm" field, not the root object
+// 错误出现在 "confirm" 字段上，而不是根对象
 ```
 
-## Why
+## 原因
 
-`.superRefine()` on the parent object receives the full parsed data and a context for adding issues. Use `path` to target the error to a specific field — this is critical for form libraries that display errors per field.
+父对象上的 `.superRefine()` 接收完整的解析数据和用于添加问题的上下文。使用 `path` 将错误定位到特定字段——这对于按字段显示错误的表单库至关重要。

@@ -1,8 +1,8 @@
-# Objects and Composition Reference
+# 对象和组合参考
 
-## Object Variants
+## 对象变体
 
-### z.object() — Strips Unknown Keys
+### z.object() — 剥离未知键
 
 ```typescript
 const User = z.object({
@@ -11,10 +11,10 @@ const User = z.object({
 })
 
 User.parse({ name: "Alice", email: "a@b.com", extra: true })
-// { name: "Alice", email: "a@b.com" } — extra is stripped
+// { name: "Alice", email: "a@b.com" } — extra 被剥离
 ```
 
-### z.strictObject() — Rejects Unknown Keys
+### z.strictObject() — 拒绝未知键
 
 ```typescript
 const Config = z.strictObject({
@@ -23,10 +23,10 @@ const Config = z.strictObject({
 })
 
 Config.parse({ host: "localhost", port: 3000, debug: true })
-// ZodError: Unrecognized key "debug"
+// ZodError: 无法识别的键 "debug"
 ```
 
-### z.looseObject() — Preserves Unknown Keys
+### z.looseObject() — 保留未知键
 
 ```typescript
 const Proxy = z.looseObject({
@@ -37,23 +37,23 @@ Proxy.parse({ id: "123", extra: true, nested: { a: 1 } })
 // { id: "123", extra: true, nested: { a: 1 } }
 ```
 
-## Object Methods
+## 对象方法
 
 ### .shape
 
-Access the raw shape object for spreading.
+访问原始形状对象以进行展开。
 
 ```typescript
 const User = z.object({ name: z.string(), email: z.email() })
 User.shape // { name: ZodString, email: ZodEmail }
 
-// Use for spreading
+// 用于展开
 const Extended = z.object({ ...User.shape, age: z.number() })
 ```
 
 ### .keyof()
 
-Returns a `z.enum()` of the object's keys.
+返回对象键的 `z.enum()`。
 
 ```typescript
 const UserKey = User.keyof()
@@ -65,7 +65,7 @@ UserKey.parse("age")   // ZodError
 
 ### .extend()
 
-Add new fields to an object schema.
+向对象模式添加新字段。
 
 ```typescript
 const WithAge = User.extend({ age: z.number() })
@@ -73,16 +73,16 @@ const WithAge = User.extend({ age: z.number() })
 
 ### .safeExtend()
 
-Extend with compile-time error on conflicting keys.
+在键冲突时进行编译时错误扩展。
 
 ```typescript
 const WithAge = User.safeExtend({ age: z.number() })
-// TypeScript error if "age" already exists in User
+// 如果 "age" 已存在于 User 中，则 TypeScript 错误
 ```
 
 ### .pick()
 
-Select specific fields.
+选择特定字段。
 
 ```typescript
 const NameOnly = User.pick({ name: true })
@@ -91,7 +91,7 @@ const NameOnly = User.pick({ name: true })
 
 ### .omit()
 
-Remove specific fields.
+移除特定字段。
 
 ```typescript
 const NoPassword = User.omit({ password: true })
@@ -99,20 +99,20 @@ const NoPassword = User.omit({ password: true })
 
 ### .partial()
 
-Make all fields optional.
+使所有字段变为可选。
 
 ```typescript
 const PartialUser = User.partial()
 // { name?: string; email?: string }
 
-// Partial specific fields
+// 部分特定字段
 const PartialName = User.partial({ name: true })
 // { name?: string; email: string }
 ```
 
 ### .required()
 
-Make all fields required.
+使所有字段变为必需。
 
 ```typescript
 const RequiredUser = PartialUser.required()
@@ -120,16 +120,16 @@ const RequiredUser = PartialUser.required()
 
 ### .catchall(schema)
 
-Validate unknown keys against a schema.
+根据模式验证未知键。
 
 ```typescript
 const Config = z.object({ host: z.string() }).catchall(z.string())
-// Known keys validated by their schemas, unknown keys must be strings
+// 已知键由其模式验证，未知键必须是字符串
 ```
 
-## Recursive Objects
+## 递归对象
 
-Use the getter pattern (v4 — `z.lazy()` is removed).
+使用 getter 模式（v4 — `z.lazy()` 已移除）。
 
 ```typescript
 const Category = z.object({
@@ -143,43 +143,43 @@ type Category = z.infer<typeof Category>
 // { name: string; children?: Category[] | undefined }
 ```
 
-## Arrays
+## 数组
 
 ```typescript
 z.array(z.string())           // string[]
-z.array(z.string()).min(1)    // at least 1 element
-z.array(z.string()).max(10)   // at most 10 elements
-z.array(z.string()).length(5) // exactly 5 elements
-z.array(z.string()).nonempty() // at least 1, narrows type to [string, ...string[]]
+z.array(z.string()).min(1)    // 至少 1 个元素
+z.array(z.string()).max(10)   // 最多 10 个元素
+z.array(z.string()).length(5) // 正好 5 个元素
+z.array(z.string()).nonempty() // 至少 1 个，将类型缩小为 [string, ...string[]]
 ```
 
-## Tuples
+## 元组
 
 ```typescript
-// Fixed-length typed array
+// 固定长度的类型化数组
 z.tuple([z.string(), z.number(), z.boolean()])
 // [string, number, boolean]
 
-// With rest element
+// 带剩余元素
 z.tuple([z.string(), z.number()]).rest(z.boolean())
 // [string, number, ...boolean[]]
 ```
 
-## Records
+## 记录
 
 ```typescript
-// Dictionary with string keys
+// 带字符串键的字典
 z.record(z.string(), z.number())
 // Record<string, number>
 
-// Enum keys
+// 枚举键
 z.record(z.enum(["a", "b"]), z.number())
 // { a: number; b: number }
 ```
 
 ### z.partialRecord()
 
-Values can be undefined.
+值可以为 undefined。
 
 ```typescript
 z.partialRecord(z.string(), z.number())
@@ -188,27 +188,27 @@ z.partialRecord(z.string(), z.number())
 
 ### z.looseRecord()
 
-Preserves extra keys.
+保留额外键。
 
 ```typescript
 z.looseRecord(z.string(), z.number())
 ```
 
-## Maps and Sets
+## 映射和集合
 
 ```typescript
 z.map(z.string(), z.number())       // Map<string, number>
 z.set(z.string())                    // Set<string>
-z.set(z.string()).min(1)             // at least 1 element
-z.set(z.string()).max(10)            // at most 10 elements
-z.set(z.string()).nonempty()         // non-empty set
+z.set(z.string()).min(1)             // 至少 1 个元素
+z.set(z.string()).max(10)            // 最多 10 个元素
+z.set(z.string()).nonempty()         // 非空集合
 ```
 
-## Unions
+## 联合类型
 
 ### z.union()
 
-Sequential matching — tries each branch in order.
+顺序匹配 — 按顺序尝试每个分支。
 
 ```typescript
 z.union([z.string(), z.number()])
@@ -217,7 +217,7 @@ z.union([z.string(), z.number()])
 
 ### z.discriminatedUnion()
 
-O(1) dispatch on a shared discriminator field.
+基于共享判别器字段的 O(1) 分发。
 
 ```typescript
 z.discriminatedUnion("type", [
@@ -228,17 +228,17 @@ z.discriminatedUnion("type", [
 
 ### z.xor()
 
-Exactly one must match.
+必须恰好匹配一个。
 
 ```typescript
 z.xor(
   z.object({ email: z.email() }),
   z.object({ phone: z.string() }),
 )
-// Must have email OR phone, not both
+// 必须有 email 或 phone，不能同时有
 ```
 
-## Intersection
+## 交集
 
 ```typescript
 z.intersection(
@@ -248,4 +248,4 @@ z.intersection(
 // { name: string; age: number }
 ```
 
-Prefer `.extend()` or spread over intersection for object merging — intersection has edge cases with overlapping keys.
+对于对象合并，优先使用 `.extend()` 或展开而不是交集 — 交集在键重叠时有边缘情况。

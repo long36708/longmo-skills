@@ -1,20 +1,20 @@
 ---
-title: Evolve Schemas Without Breaking Consumers
+title: 在不破坏消费者的情况下演进模式
 impact: MEDIUM
-description: Use additive changes for non-breaking evolution. New fields use .optional(). Never remove required fields without a major version bump.
+description: 使用加法性更改进行非破坏性演进。新字段使用.optional()。没有重大版本升级，永远不要删除必需字段。
 tags: architecture, versioning, backward-compatibility, api-evolution
 ---
 
-# Evolve Schemas Without Breaking Consumers
+# 在不破坏消费者的情况下演进模式
 
-## Problem
+## 问题
 
-Removing or tightening fields in a Zod schema silently breaks consumers. Because `z.object()` strips unknown keys by default, removed fields vanish from parsed output without any error — consumers reading that field get `undefined` at runtime despite TypeScript showing no compile error if they haven't updated their types.
+在Zod模式中删除或收紧字段会静默地破坏消费者。因为 `z.object()` 默认会剥离未知键，删除的字段会从解析输出中消失而没有任何错误 - 消费者读取该字段在运行时会得到 `undefined`，尽管如果他们没有更新类型，TypeScript不会显示编译错误。
 
-## Incorrect
+## 错误做法
 
 ```typescript
-// v1 — consumers depend on `role`
+// v1 - 消费者依赖 `role`
 const UserV1 = z.object({
   name: z.string(),
   email: z.email(),
@@ -22,44 +22,44 @@ const UserV1 = z.object({
   nickname: z.string(),
 })
 
-// v2 — BREAKING: removed `role`, consumers silently get undefined
+// v2 - 破坏性：删除了 `role`，消费者静默获得undefined
 const UserV2 = z.object({
   name: z.string(),
   email: z.email(),
   nickname: z.string(),
-  // role is gone — consumers calling user.role get undefined
+  // role已消失 - 调用user.role的消费者获得undefined
 })
 ```
 
-## Correct
+## 正确做法
 
 ```typescript
-// v2 — non-breaking: keep role, add displayName as optional, deprecate nickname
+// v2 - 非破坏性：保留role，添加displayName为可选，弃用nickname
 const UserV2 = z.object({
   name: z.string(),
   email: z.email(),
-  role: z.enum(["admin", "user"]),         // kept — not removed
-  nickname: z.string(),                     // kept — deprecate in docs, remove in v3
-  displayName: z.string().optional(),       // new — optional so old payloads still parse
+  role: z.enum(["admin", "user"]),         // 保留 - 未删除
+  nickname: z.string(),                     // 保留 - 在文档中弃用，在v3中删除
+  displayName: z.string().optional(),       // 新增 - 可选，因此旧负载仍可解析
 })
 
 type UserV2 = z.infer<typeof UserV2>
 ```
 
-## Decision Table: Schema Changes
+## 决策表：模式更改
 
-| Change | Breaking? | Safe Approach |
+| 更改 | 破坏性？ | 安全方法 |
 |--------|-----------|---------------|
-| Add optional field | No | `.optional()` — old data still parses |
-| Add required field | **Yes** | Make optional first, require in next major |
-| Remove field | **Yes** | Deprecate first, remove in next major |
-| Tighten constraint (e.g., min 1 → min 5) | **Yes** | Previously valid data now fails |
-| Loosen constraint (e.g., min 5 → min 1) | No | All existing data still valid |
-| Rename field | **Yes** | Add new name as optional, keep old, migrate |
-| Change type (e.g., string → number) | **Yes** | New field with new name, deprecate old |
-| Add union member | No | Existing data still matches |
-| Remove union member | **Yes** | Existing data with that value fails |
+| 添加可选字段 | 否 | `.optional()` - 旧数据仍可解析 |
+| 添加必需字段 | **是** | 首先设为可选，在下一个主要版本中要求 |
+| 删除字段 | **是** | 首先弃用，在下一个主要版本中删除 |
+| 收紧约束（例如，min 1 → min 5） | **是** | 先前有效的数据现在失败 |
+| 放宽约束（例如，min 5 → min 1） | 否 | 所有现有数据仍然有效 |
+| 重命名字段 | **是** | 添加新名称作为可选，保留旧名称，迁移 |
+| 更改类型（例如，string → number） | **是** | 使用新名称的新字段，弃用旧的 |
+| 添加联合成员 | 否 | 现有数据仍然匹配 |
+| 删除联合成员 | **是** | 具有该值的现有数据失败 |
 
-## Why
+## 为什么
 
-Zod schemas are runtime contracts. Changing them has the same impact as changing an API — consumers that depend on the shape will break. Additive changes (new optional fields, loosened constraints, new union members) are always safe. Subtractive changes (removing fields, tightening constraints) require coordinated migration across all consumers.
+Zod模式是运行时契约。更改它们与更改API具有相同的影响 - 依赖该形状的消费者将中断。加法性更改（新的可选字段、放宽的约束、新的联合成员）总是安全的。减法性更改（删除字段、收紧约束）需要所有消费者之间协调迁移。

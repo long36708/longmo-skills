@@ -1,20 +1,20 @@
 ---
-title: Use Zod Mini for Client Bundles
+title: 客户端包使用Zod Mini
 impact: MEDIUM
-description: Use Zod Mini (1.88kb) for bundle-critical client-side apps. Functional API instead of methods.
+description: 对于包大小关键的客户端应用使用Zod Mini（1.88kb）。函数式API而不是方法。
 tags: bundle-size, mini, client, tree-shaking
 ---
 
-# Use Zod Mini for Client Bundles
+# 客户端包使用Zod Mini
 
-## Problem
+## 问题
 
-Full Zod adds significant weight to client bundles. For form validation or client-side parsing where bundle size matters, Zod Mini provides the same core functionality at ~1.88kb gzipped.
+完整的Zod显著增加了客户端包的体积。对于包大小很重要的表单验证或客户端解析，Zod Mini以约1.88kb的gzip大小提供相同的核心功能。
 
-## Incorrect
+## 错误做法
 
 ```typescript
-// BAD: full Zod in a client bundle where size matters
+// 错误：在包大小很重要的客户端包中使用完整Zod
 import { z } from "zod"
 
 const LoginForm = z.object({
@@ -23,10 +23,10 @@ const LoginForm = z.object({
 })
 ```
 
-## Correct
+## 正确做法
 
 ```typescript
-// GOOD: Zod Mini for client bundles — 1.88kb gzipped
+// 正确：客户端包使用Zod Mini - 1.88kb gzip
 import { z } from "zod/v4/mini"
 
 const LoginForm = z.object({
@@ -35,13 +35,13 @@ const LoginForm = z.object({
 })
 ```
 
-## Why
+## 为什么
 
-Zod Mini uses a functional API (`.check()` with check functions) instead of the chainable method API. This enables better tree-shaking. Use full Zod on the server where bundle size doesn't matter, and Zod Mini on the client where it does.
+Zod Mini使用函数式API（带有检查函数的`.check()`）而不是可链接的方法API。这实现了更好的tree-shaking。在包大小不重要的服务器上使用完整Zod，在包大小重要的客户端上使用Zod Mini。
 
-| | Full Zod | Zod Mini |
+| | 完整Zod | Zod Mini |
 |---|---|---|
-| Size (gzip) | ~13kb | ~1.88kb |
-| API style | Method chaining (`.min()`, `.max()`) | Functional (`.check(z.minLength())`) |
-| Features | All | Core (no `.describe()`, no JSON Schema) |
-| Use when | Server, Node.js, scripts | Client bundles, edge functions |
+| 大小（gzip） | ~13kb | ~1.88kb |
+| API风格 | 方法链（`.min()`、`.max()`） | 函数式（`.check(z.minLength())`） |
+| 特性 | 全部 | 核心（无`.describe()`，无JSON Schema） |
+| 何时使用 | 服务器、Node.js、脚本 | 客户端包、边缘函数 |

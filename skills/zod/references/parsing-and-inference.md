@@ -1,35 +1,35 @@
-# Parsing and Type Inference Reference
+# 解析和类型推断参考
 
-## Parsing Methods
+## 解析方法
 
 ### parse(data)
 
-Parses input and returns the validated data. Throws `ZodError` on failure.
+解析输入并返回验证后的数据。失败时抛出 `ZodError`。
 
 ```typescript
-const result = UserSchema.parse(data) // returns User or throws
+const result = UserSchema.parse(data) // 返回 User 或抛出错误
 ```
 
-Use when invalid data is truly exceptional (internal config, constants).
+当无效数据确实是异常情况时使用（内部配置、常量）。
 
 ### safeParse(data)
 
-Returns a discriminated union — never throws.
+返回一个判别式联合 — 从不抛出。
 
 ```typescript
 const result = UserSchema.safeParse(data)
 if (result.success) {
-  result.data // typed as User
+  result.data // 类型化为 User
 } else {
   result.error // ZodError
 }
 ```
 
-Preferred for all user input, API boundaries, form data.
+对于所有用户输入、API 边界、表单数据优先使用。
 
 ### parseAsync(data)
 
-Required when schema contains async refinements or transforms. Throws on failure.
+当模式包含异步精化或转换时需要。失败时抛出。
 
 ```typescript
 const result = await UserSchema.parseAsync(data)
@@ -37,7 +37,7 @@ const result = await UserSchema.parseAsync(data)
 
 ### safeParseAsync(data)
 
-Async version of safeParse. Required for async refinements/transforms.
+safeParse 的异步版本。需要异步精化/转换时使用。
 
 ```typescript
 const result = await UserSchema.safeParseAsync(data)
@@ -57,11 +57,11 @@ if (result.success) {
 | `parseAsync()` | Yes | Yes | Async refinements, internal data |
 | `safeParseAsync()` | No | Yes | Async refinements, user input |
 
-## Type Inference
+## 类型推断
 
 ### z.infer<typeof Schema>
 
-Extracts the **output** type (after transforms).
+提取**输出**类型（转换后的类型）。
 
 ```typescript
 const UserSchema = z.object({
@@ -75,25 +75,25 @@ type User = z.infer<typeof UserSchema>
 
 ### z.input<typeof Schema>
 
-Extracts the **input** type (before transforms).
+提取**输入**类型（转换前的类型）。
 
 ```typescript
 type UserInput = z.input<typeof UserSchema>
 // { name: string; createdAt: string }
 ```
 
-Useful for form state, request bodies, or any context where you work with pre-transform data.
+对于表单状态、请求体或任何处理转换前数据的上下文非常有用。
 
 ### z.output<typeof Schema>
 
-Alias for `z.infer`. Extracts the output type.
+`z.infer` 的别名。提取输出类型。
 
 ```typescript
 type User = z.output<typeof UserSchema>
-// Same as z.infer<typeof UserSchema>
+// 与 z.infer<typeof UserSchema> 相同
 ```
 
-### Input vs Output Examples
+### 输入与输出示例
 
 ```typescript
 const FormSchema = z.object({
@@ -109,38 +109,38 @@ type FormOutput = z.infer<typeof FormSchema>
 // { age: number; active: boolean; date: Date }
 ```
 
-## Coercion Namespace
+## 强制转换命名空间
 
-Coercion schemas apply JavaScript constructors before validation.
+强制转换模式在验证前应用 JavaScript 构造函数。
 
 ```typescript
-z.coerce.string()   // String(input) → then validate as string
-z.coerce.number()   // Number(input) → then validate as number
-z.coerce.boolean()  // Boolean(input) → then validate as boolean
-z.coerce.bigint()   // BigInt(input) → then validate as bigint
-z.coerce.date()     // new Date(input) → then validate as date
+z.coerce.string()   // String(input) → 然后验证为字符串
+z.coerce.number()   // Number(input) → 然后验证为数字
+z.coerce.boolean()  // Boolean(input) → 然后验证为布尔值
+z.coerce.bigint()   // BigInt(input) → 然后验证为大整数
+z.coerce.date()     // new Date(input) → 然后验证为日期
 ```
 
-### Coercion Pitfall: Boolean
+### 强制转换陷阱：布尔值
 
 ```typescript
-z.coerce.boolean().parse("false") // true — Boolean("false") is true
-z.coerce.boolean().parse("")      // false — Boolean("") is false
-z.coerce.boolean().parse("0")     // true — Boolean("0") is true
+z.coerce.boolean().parse("false") // true — Boolean("false") 为 true
+z.coerce.boolean().parse("")      // false — Boolean("") 为 false
+z.coerce.boolean().parse("0")     // true — Boolean("0") 为 true
 
-// Use z.stringbool() for string→boolean from forms/env vars
+// 对于表单/环境变量的字符串→布尔值转换，使用 z.stringbool()
 z.stringbool().parse("false") // false
 z.stringbool().parse("0")     // false
 ```
 
-## Parse Options
+## 解析选项
 
 ```typescript
-// reportInput — includes raw input in error issues
+// reportInput — 在错误问题中包含原始输入
 schema.safeParse(data, { reportInput: true })
-// error.issues[0].input will contain the raw value
+// error.issues[0].input 将包含原始值
 
-// Only use in development — leaks sensitive data in production
+// 仅在开发环境中使用 — 在生产环境中会泄露敏感数据
 schema.safeParse(data, {
   reportInput: process.env.NODE_ENV === "development",
 })

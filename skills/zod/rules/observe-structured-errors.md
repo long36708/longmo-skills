@@ -1,39 +1,39 @@
 ---
-title: Log Structured Errors, Not Raw ZodError
+title: 记录结构化错误，而不是原始ZodError
 impact: HIGH
-description: Use z.flattenError() for compact, structured logs with request correlation IDs. Never console.log a raw ZodError — it's noisy, unstructured, and impossible to query.
+description: 使用z.flattenError()进行紧凑、结构化的日志记录，包含请求关联ID。永远不要console.log原始ZodError - 它嘈杂、非结构化且无法查询。
 tags: observability, logging, errors, flattenError, structured-logging
 ---
 
-# Log Structured Errors, Not Raw ZodError
+# 记录结构化错误，而不是原始ZodError
 
-## Problem
+## 问题
 
-Raw `ZodError` objects contain deeply nested issue arrays with internal metadata. Logging them directly produces noisy, unstructured output that's impossible to filter, alert on, or query in log aggregation tools (Datadog, Grafana, ELK).
+原始 `ZodError` 对象包含深度嵌套的问题数组和内部元数据。直接记录它们会产生嘈杂、非结构化的输出，无法在日志聚合工具（Datadog、Grafana、ELK）中过滤、警报或查询。
 
-## Incorrect
+## 错误做法
 
 ```typescript
-// BUG: raw ZodError is noisy and unqueryable
+// BUG: 原始ZodError嘈杂且无法查询
 app.post("/api/users", (req, res) => {
   const result = UserSchema.safeParse(req.body)
   if (!result.success) {
     logger.error("Validation failed", { error: result.error })
-    // Logs a massive nested object with internal Zod metadata
-    // Cannot search by field name, schema, or request
+    // 记录一个巨大的嵌套对象，包含内部Zod元数据
+    // 无法按字段名、模式或请求搜索
     return res.status(400).json({ error: "Invalid input" })
   }
 })
 ```
 
 ```typescript
-// BUG: console.log — no structure, no correlation
+// BUG: console.log - 无结构，无关联
 if (!result.success) {
   console.log("Validation failed:", result.error)
 }
 ```
 
-## Correct
+## 正确做法
 
 ```typescript
 app.post("/api/users", (req, res) => {
@@ -53,7 +53,7 @@ app.post("/api/users", (req, res) => {
 ```
 
 ```typescript
-// Reusable helper for consistent structured logging
+// 可重用的助手，用于一致的结构化日志记录
 function logValidationError(
   logger: Logger,
   opts: {
@@ -75,6 +75,6 @@ function logValidationError(
 }
 ```
 
-## Why
+## 为什么
 
-Structured logs with `z.flattenError()` are compact (field name → error messages), queryable (search by schema name or failing field), and correlatable (request ID ties the error to a specific request). This enables dashboards that show which schemas and fields fail most often, alerting on validation spike rates, and debugging specific user requests.
+使用 `z.flattenError()` 的结构化日志是紧凑的（字段名 → 错误消息）、可查询的（按模式名或失败字段搜索）和可关联的（请求ID将错误与特定请求关联）。这使仪表板能够显示哪些模式和字段最常失败，对验证峰值率发出警报，并调试特定用户请求。

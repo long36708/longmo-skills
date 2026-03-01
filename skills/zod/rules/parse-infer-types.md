@@ -1,20 +1,20 @@
 ---
-title: Infer Types from Schemas
+title: 从模式推断类型
 impact: CRITICAL
-description: Use z.infer<typeof Schema> for output types. Never manually duplicate types.
+description: 使用z.infer<typeof Schema>获取输出类型。永远不要手动复制类型。
 tags: inference, types, typescript, DRY
 ---
 
-# Infer Types from Schemas
+# 从模式推断类型
 
-## Problem
+## 问题
 
-Manually defining TypeScript interfaces alongside Zod schemas creates duplicate type definitions that drift apart. When the schema changes, the manual type is forgotten.
+手动定义TypeScript接口与Zod模式并行创建了会漂移的重复类型定义。当模式更改时，手动类型会被遗忘。
 
-## Incorrect
+## 错误做法
 
 ```typescript
-// BUG: manual type will drift from schema
+// BUG: 手动类型将与模式漂移
 interface User {
   name: string
   email: string
@@ -27,10 +27,10 @@ const UserSchema = z.object({
   age: z.number().min(0),
 })
 
-// These can silently diverge when schema is updated
+// 当模式更新时，这些可以静默地偏离
 ```
 
-## Correct
+## 正确做法
 
 ```typescript
 const UserSchema = z.object({
@@ -39,13 +39,13 @@ const UserSchema = z.object({
   age: z.number().min(0),
 })
 
-// Output type (after parsing/transforms)
+// 输出类型（解析/转换后）
 type User = z.infer<typeof UserSchema>
 
-// Input type (before transforms — useful for forms)
+// 输入类型（转换前 - 对表单有用）
 type UserInput = z.input<typeof UserSchema>
 ```
 
-## Why
+## 为什么
 
-`z.infer` extracts the output type (after transforms). `z.input` extracts the input type (before transforms). These always stay in sync with the schema. Use `z.infer` for most cases; use `z.input` when you need the pre-transform shape (e.g., form state where a date field is a string before being transformed to Date).
+`z.infer` 提取输出类型（转换后）。`z.input` 提取输入类型（转换前）。这些始终与模式保持同步。在大多数情况下使用 `z.infer`；当你需要预转换形状时使用 `z.input`（例如，表单状态，其中日期字段在转换为Date之前是字符串）。

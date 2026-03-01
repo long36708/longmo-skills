@@ -1,14 +1,14 @@
-# Linting and CI Rules for Zod
+# Zod 的代码检查和 CI 规则
 
-## Overview
+## 概述
 
-Mechanical enforcement catches mistakes before code review. Use ESLint rules, CI checks, and static analysis tools to enforce Zod best practices automatically.
+机械执行在代码审查之前捕获错误。使用 ESLint 规则、CI 检查和静态分析工具自动强制执行 Zod 最佳实践。
 
-## ESLint: `no-restricted-syntax` Rules
+## ESLint: `no-restricted-syntax` 规则
 
-### Ban `parse()` in Application Code
+### 在应用程序代码中禁止 `parse()`
 
-Force `safeParse()` usage. `parse()` throws, which leads to unhandled exceptions.
+强制使用 `safeParse()`。`parse()` 会抛出异常，导致未处理的异常。
 
 ```jsonc
 // .eslintrc.json
@@ -18,14 +18,14 @@ Force `safeParse()` usage. `parse()` throws, which leads to unhandled exceptions
       "error",
       {
         "selector": "CallExpression[callee.property.name='parse'][callee.object.type!='ThisExpression']",
-        "message": "Use safeParse() instead of parse(). parse() throws on invalid input. See: rules/parse-use-safeParse.md"
+        "message": "使用 safeParse() 而不是 parse()。parse() 在无效输入时抛出异常。参见: rules/parse-use-safeParse.md"
       }
     ]
   }
 }
 ```
 
-To allow `parse()` in specific files (e.g., env config where crashing on invalid env is intentional), use ESLint overrides:
+要在特定文件中允许 `parse()`（例如，环境配置中在无效环境时崩溃是故意的），请使用 ESLint 覆盖：
 
 ```jsonc
 {
@@ -40,9 +40,9 @@ To allow `parse()` in specific files (e.g., env config where crashing on invalid
 }
 ```
 
-### Detect `reportInput` Usage
+### 检测 `reportInput` 使用
 
-`reportInput: true` leaks sensitive data in production.
+`reportInput: true` 在生产环境中泄漏敏感数据。
 
 ```jsonc
 {
@@ -51,32 +51,32 @@ To allow `parse()` in specific files (e.g., env config where crashing on invalid
       "error",
       {
         "selector": "Property[key.name='reportInput'][value.value=true]",
-        "message": "reportInput: true leaks sensitive data in production. Use: reportInput: process.env.NODE_ENV === 'development'. See: rules/error-input-security.md"
+        "message": "reportInput: true 在生产环境中泄漏敏感数据。使用: reportInput: process.env.NODE_ENV === 'development'。参见: rules/error-input-security.md"
       }
     ]
   }
 }
 ```
 
-### Ban `z.nativeEnum()` (Removed in v4)
+### 禁止 `z.nativeEnum()`（v4 中已移除）
 
 ```jsonc
 {
   "selector": "CallExpression[callee.property.name='nativeEnum']",
-  "message": "z.nativeEnum() is removed in Zod v4. Use z.enum(YourTSEnum) instead. See: rules/migrate-native-enum.md"
+  "message": "z.nativeEnum() 在 Zod v4 中已移除。请改用 z.enum(YourTSEnum)。参见: rules/migrate-native-enum.md"
 }
 ```
 
-### Ban `z.string().email()` (Use `z.email()`)
+### 禁止 `z.string().email()`（使用 `z.email()`）
 
 ```jsonc
 {
   "selector": "CallExpression[callee.property.name='email'][callee.object.callee.property.name='string']",
-  "message": "Use z.email() instead of z.string().email() in Zod v4. See: rules/migrate-string-formats.md"
+  "message": "在 Zod v4 中使用 z.email() 而不是 z.string().email()。参见: rules/migrate-string-formats.md"
 }
 ```
 
-### Full ESLint Config Example
+### 完整 ESLint 配置示例
 
 ```jsonc
 {
@@ -85,15 +85,15 @@ To allow `parse()` in specific files (e.g., env config where crashing on invalid
       "error",
       {
         "selector": "CallExpression[callee.property.name='parse'][callee.object.type!='ThisExpression']",
-        "message": "Use safeParse() instead of parse(). See: rules/parse-use-safeParse.md"
+        "message": "使用 safeParse() 而不是 parse()。参见: rules/parse-use-safeParse.md"
       },
       {
         "selector": "Property[key.name='reportInput'][value.value=true]",
-        "message": "reportInput: true leaks sensitive data. See: rules/error-input-security.md"
+        "message": "reportInput: true 泄漏敏感数据。参见: rules/error-input-security.md"
       },
       {
         "selector": "CallExpression[callee.property.name='nativeEnum']",
-        "message": "z.nativeEnum() removed in v4. Use z.enum(). See: rules/migrate-native-enum.md"
+        "message": "z.nativeEnum() 在 v4 中已移除。使用 z.enum()。参见: rules/migrate-native-enum.md"
       }
     ]
   },
@@ -108,11 +108,11 @@ To allow `parse()` in specific files (e.g., env config where crashing on invalid
 }
 ```
 
-## CI: Schema Snapshot Regression
+## CI: 模式快照回归
 
-Detect unintended schema changes by committing JSON Schema snapshots and failing CI when they drift.
+通过提交 JSON Schema 快照并在它们分离时使 CI 失败来检测意外的模式更改。
 
-### Setup
+### 设置
 
 ```typescript
 // scripts/export-schemas.ts
@@ -136,11 +136,11 @@ for (const [name, schema] of Object.entries(schemas)) {
 }
 ```
 
-### CI Check
+### CI 检查
 
 ```yaml
 # .github/workflows/schema-check.yml
-name: Schema Snapshot Check
+name: 模式快照检查
 on: [pull_request]
 
 jobs:
@@ -151,35 +151,35 @@ jobs:
       - uses: actions/setup-node@v4
       - run: npm ci
       - run: npx tsx scripts/export-schemas.ts
-      - name: Check for schema drift
+      - name: 检查模式分离
         run: |
           if git diff --exit-code snapshots/; then
-            echo "Schemas unchanged"
+            echo "模式未更改"
           else
-            echo "::error::Schema snapshots have changed. Review the diff and update snapshots if intentional."
+            echo "::error::模式快照已更改。查看差异，如果是有意的，请更新快照。"
             git diff snapshots/
             exit 1
           fi
 ```
 
-### Workflow
+### 工作流程
 
-1. Developer changes a schema
-2. CI runs `export-schemas.ts` and diffs against committed snapshots
-3. If diff exists, CI fails with the exact changes shown
-4. Developer reviews the diff, runs `npx tsx scripts/export-schemas.ts` locally, commits updated snapshots
+1. 开发者更改模式
+2. CI 运行 `export-schemas.ts` 并与提交的快照进行差异比较
+3. 如果存在差异，CI 失败并显示确切的更改
+4. 开发者查看差异，在本地运行 `npx tsx scripts/export-schemas.ts`，提交更新的快照
 
-## Unused Schema Detection
+## 未使用模式检测
 
-Find schemas that are defined but never imported.
+查找已定义但从未导入的模式。
 
-### With knip
+### 使用 knip
 
 ```bash
 npx knip --include exports
 ```
 
-knip detects unused exports including schemas. Configure in `knip.json`:
+knip 检测未使用的导出，包括模式。在 `knip.json` 中配置：
 
 ```jsonc
 {
@@ -189,56 +189,56 @@ knip detects unused exports including schemas. Configure in `knip.json`:
 }
 ```
 
-### With ts-prune
+### 使用 ts-prune
 
 ```bash
 npx ts-prune | grep -i schema
 ```
 
-Shows exported symbols with no imports. Review and remove dead schemas.
+显示没有导入的导出符号。审查并移除死代码模式。
 
-## Circular Dependency Detection
+## 循环依赖检测
 
-Schemas that import each other create circular dependencies that cause runtime crashes.
+相互导入的模式创建循环依赖，导致运行时崩溃。
 
-### With madge
+### 使用 madge
 
 ```bash
-# Find circular dependencies
+# 查找循环依赖
 npx madge --circular --extensions ts src/
 
-# Generate dependency graph
+# 生成依赖图
 npx madge --image graph.svg --extensions ts src/
 ```
 
-### CI Integration
+### CI 集成
 
 ```yaml
-- name: Check circular dependencies
+- name: 检查循环依赖
   run: |
     npx madge --circular --extensions ts src/
     if [ $? -ne 0 ]; then
-      echo "::error::Circular dependencies detected"
+      echo "::error::检测到循环依赖"
       exit 1
     fi
 ```
 
-## Custom ESLint Rule Messages
+## 自定义 ESLint 规则消息
 
-Include remediation instructions in ESLint messages so developers know exactly what to do:
+在 ESLint 消息中包含修复说明，以便开发者确切知道该怎么做：
 
 ```jsonc
 {
   "selector": "CallExpression[callee.property.name='parse']",
-  "message": "Use safeParse() instead of parse().\n\nparse() throws ZodError on invalid input.\nsafeParse() returns { success, data | error }.\n\nReplace:\n  schema.parse(data)\nWith:\n  const result = schema.safeParse(data)\n  if (!result.success) { /* handle error */ }\n\nSee: rules/parse-use-safeParse.md"
+  "message": "使用 safeParse() 而不是 parse()。\n\nparse() 在无效输入时抛出 ZodError。\nsafeParse() 返回 { success, data | error }。\n\n替换：\n  schema.parse(data)\n为：\n  const result = schema.safeParse(data)\n  if (!result.success) { /* 处理错误 */ }\n\n参见: rules/parse-use-safeParse.md"
 }
 ```
 
-## Summary
+## 总结
 
-| Tool | What It Catches | When |
-|------|----------------|------|
-| ESLint `no-restricted-syntax` | Banned API usage (parse, reportInput, nativeEnum) | On save / pre-commit |
-| Schema snapshot CI | Unintended schema changes | On pull request |
-| knip / ts-prune | Unused schemas | On pull request / periodic |
-| madge | Circular schema dependencies | On pull request |
+| 工具 | 捕获什么 | 时机 |
+|------|----------|------|
+| ESLint `no-restricted-syntax` | 禁止的 API 使用（parse、reportInput、nativeEnum） | 保存时 / 预提交 |
+| 模式快照 CI | 意外的模式更改 | 拉取请求时 |
+| knip / ts-prune | 未使用的模式 | 拉取请求时 / 定期 |
+| madge | 循环模式依赖 | 拉取请求时 |

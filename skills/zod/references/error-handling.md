@@ -1,64 +1,64 @@
-# Error Handling Reference
+# 错误处理参考
 
 ## ZodError
 
 ```typescript
 const result = schema.safeParse(data)
 if (!result.success) {
-  result.error           // ZodError instance
-  result.error.issues    // array of ZodIssue
-  result.error.message   // JSON string of issues
-  result.error.toString() // same as .message
+  result.error           // ZodError 实例
+  result.error.issues    // ZodIssue 数组
+  result.error.message   // 问题的 JSON 字符串
+  result.error.toString() // 与 .message 相同
 }
 ```
 
-## Issue Structure
+## 问题结构
 
 ```typescript
 interface ZodIssue {
-  code: string        // issue type code
-  message: string     // human-readable message
-  path: (string | number)[]  // path to the field
-  input?: unknown     // raw input (only if reportInput: true)
-  // ... additional fields depending on code
+  code: string        // 问题类型代码
+  message: string     // 人类可读的消息
+  path: (string | number)[]  // 到字段的路径
+  input?: unknown     // 原始输入（仅在 reportInput: true 时）
+  // ... 根据代码的附加字段
 }
 ```
 
-## Issue Codes
+## 问题代码
 
-| Code | When | Extra Fields |
-|------|------|-------------|
-| `invalid_type` | Wrong type | `expected`, `received` |
-| `too_small` | Below minimum | `minimum`, `inclusive`, `type` |
-| `too_big` | Above maximum | `maximum`, `inclusive`, `type` |
-| `invalid_string` | String format failure | `validation` |
-| `custom` | Custom refinement | — |
-| `invalid_enum_value` | Not in enum | `options`, `received` |
-| `unrecognized_keys` | Unknown keys (strict) | `keys` |
-| `invalid_union` | No branch matched | `unionErrors` |
-| `invalid_arguments` | Function args invalid | `argumentsError` |
-| `invalid_return_type` | Function return invalid | `returnTypeError` |
+| 代码 | 何时 | 额外字段 |
+|------|------|----------|
+| `invalid_type` | 类型错误 | `expected`, `received` |
+| `too_small` | 低于最小值 | `minimum`, `inclusive`, `type` |
+| `too_big` | 高于最大值 | `maximum`, `inclusive`, `type` |
+| `invalid_string` | 字符串格式失败 | `validation` |
+| `custom` | 自定义精化 | — |
+| `invalid_enum_value` | 不在枚举中 | `options`, `received` |
+| `unrecognized_keys` | 未知键（严格） | `keys` |
+| `invalid_union` | 没有分支匹配 | `unionErrors` |
+| `invalid_arguments` | 函数参数无效 | `argumentsError` |
+| `invalid_return_type` | 函数返回无效 | `returnTypeError` |
 
-## Error Formatting Functions
+## 错误格式化函数
 
 ### z.flattenError(error)
 
-Flat structure for simple forms.
+用于简单表单的扁平结构。
 
 ```typescript
 const flat = z.flattenError(result.error)
 // {
-//   formErrors: ["Root-level error"],
+//   formErrors: ["根级错误"],
 //   fieldErrors: {
-//     email: ["Invalid email"],
-//     age: ["Must be positive", "Must be integer"],
+//     email: ["无效邮箱"],
+//     age: ["必须是正数", "必须是整数"],
 //   }
 // }
 ```
 
 ### z.treeifyError(error)
 
-Nested tree matching schema shape. For deeply nested forms.
+与模式形状匹配的嵌套树。用于深度嵌套表单。
 
 ```typescript
 const tree = z.treeifyError(result.error)
@@ -68,7 +68,7 @@ const tree = z.treeifyError(result.error)
 //     address: {
 //       errors: [],
 //       properties: {
-//         zip: { errors: ["Required"] }
+//         zip: { errors: ["必填"] }
 //       }
 //     }
 //   }
@@ -77,86 +77,86 @@ const tree = z.treeifyError(result.error)
 
 ### z.prettifyError(error)
 
-Human-readable string for logging/debugging.
+用于日志记录/调试的人类可读字符串。
 
 ```typescript
 const pretty = z.prettifyError(result.error)
-// "✖ Invalid email at «email»
-//  ✖ Required at «address.zip»"
+// "✖ 无效邮箱 at «email»
+//  ✖ 必填 at «address.zip»"
 ```
 
-### z.formatError() — Deprecated
+### z.formatError() — 已弃用
 
-Do not use. Removed in v4. Use `flattenError` or `treeifyError` instead.
+不要使用。在 v4 中已移除。请改用 `flattenError` 或 `treeifyError`。
 
-## Error Customization
+## 错误自定义
 
-### Schema Level
+### 模式级别
 
 ```typescript
-// String shorthand
-z.string({ error: "Must be a string" })
-z.number().min(18, { error: "Must be 18+" })
-z.number().min(18, "Must be 18+") // shorthand
+// 字符串简写
+z.string({ error: "必须是字符串" })
+z.number().min(18, { error: "必须 18 岁以上" })
+z.number().min(18, "必须 18 岁以上") // 简写
 
-// Function form — dynamic messages
+// 函数形式 — 动态消息
 z.string({
   error: (issue) => {
-    if (issue.input === undefined) return "Required"
-    return "Must be a string"
+    if (issue.input === undefined) return "必填"
+    return "必须是字符串"
   },
 })
 ```
 
-### Parse Level
+### 解析级别
 
 ```typescript
 schema.safeParse(data, {
   error: (issue) => {
-    // Override error for this parse call only
-    return `Validation failed: ${issue.code}`
+    // 仅覆盖此解析调用的错误
+    return `验证失败: ${issue.code}`
   },
 })
 ```
 
-### Global Level
+### 全局级别
 
 ```typescript
 z.config({
   customError: (issue) => {
-    // Global default error messages
+    // 全局默认错误消息
     if (issue.code === "invalid_type") {
-      return `Expected ${issue.expected}, got ${issue.received}`
+      return `期望 ${issue.expected}，得到 ${issue.received}`
     }
   },
 })
 ```
 
-## Error Precedence
+## 错误优先级
 
-1. **Schema-level** `error` — highest priority
-2. **Parse-level** `error` — middle priority
-3. **Global** `z.config({ customError })` — lowest priority
+1. **模式级别** `error` — 最高优先级
+2. **解析级别** `error` — 中等优先级
+3. **全局** `z.config({ customError })` — 最低优先级
 
-If a schema has an `error` parameter, it always wins over parse-level and global settings.
+如果模式有 `error` 参数，它总是优先于解析级别和全局设置。
 
-## reportInput Option
+## reportInput 选项
 
-Includes raw input values in error issues. **Never use in production.**
+在错误问题中包含原始输入值。**永远不要在生产环境中使用。**
 
 ```typescript
-// Development only
+// 仅开发环境
 const result = schema.safeParse(data, { reportInput: true })
 if (!result.success) {
-  result.error.issues[0].input // contains the raw value
+  result.error.issues[0].input // 包含原始值
 }
 ```
 
-Leaks passwords, tokens, PII into logs and error monitoring.
+泄漏密码、令牌、PII 到日志和错误监控中。
 
-## i18n / Localization
+## i18n / 本地化
 
-Use the error function form for localized messages.
+使用错误函数形式进行本地化消息。
 
 ```typescript
 const t = getTranslation(locale)
@@ -169,7 +169,7 @@ const NameSchema = z.string({
 }).min(1, { error: t("field.too_short") })
 ```
 
-Or use global config for app-wide localization:
+或者使用全局配置进行应用程序范围的本地化：
 
 ```typescript
 z.config({

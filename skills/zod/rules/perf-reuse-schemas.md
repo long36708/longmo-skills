@@ -1,20 +1,20 @@
 ---
-title: Reuse Schemas with Composition
+title: 使用组合重用模式
 impact: MEDIUM
-description: Define schemas once. Use .pick(), .omit(), .partial() to derive variants.
+description: 定义模式一次。使用.pick()、.omit()、.partial()派生变体。
 tags: composition, pick, omit, partial, DRY
 ---
 
-# Reuse Schemas with Composition
+# 使用组合重用模式
 
-## Problem
+## 问题
 
-Duplicating field definitions across related schemas (Create, Update, Response) leads to drift. When a field changes, only some schemas get updated.
+在相关模式（创建、更新、响应）中重复字段定义会导致漂移。当字段更改时，只有某些模式得到更新。
 
-## Incorrect
+## 错误做法
 
 ```typescript
-// BAD: fields duplicated across schemas
+// 错误：字段在模式间重复
 const UserCreate = z.object({
   name: z.string(),
   email: z.email(),
@@ -24,7 +24,7 @@ const UserCreate = z.object({
 const UserUpdate = z.object({
   name: z.string().optional(),
   email: z.email().optional(),
-  // forgot password field — drift
+  // 忘记密码字段 - 漂移
 })
 
 const UserResponse = z.object({
@@ -35,10 +35,10 @@ const UserResponse = z.object({
 })
 ```
 
-## Correct
+## 正确做法
 
 ```typescript
-// GOOD: single source, derive variants
+// 正确：单一源，派生变体
 const User = z.object({
   id: z.string(),
   name: z.string(),
@@ -52,6 +52,6 @@ const UserUpdate = User.pick({ name: true, email: true }).partial()
 const UserResponse = User.omit({ password: true })
 ```
 
-## Why
+## 为什么
 
-`pick()`, `omit()`, `partial()`, and `required()` derive new schemas from a base. Changes to the base propagate automatically to all derived schemas. The inferred types also stay in sync.
+`pick()`、`omit()`、`partial()` 和 `required()` 从基类派生新模式。对基类的更改会自动传播到所有派生模式。推断的类型也保持同步。

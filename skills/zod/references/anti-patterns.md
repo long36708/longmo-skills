@@ -1,26 +1,26 @@
-# Zod Anti-Patterns
+# Zod 反模式
 
-## Table of Contents
+## 目录
 
-- Using parse() with try/catch instead of safeParse()
-- Sync parse with async refinements
-- Manual type definitions alongside schemas
-- Deprecated string format chaining (v4)
-- Using z.nativeEnum() (v4)
-- Using required_error/invalid_type_error (v4)
-- Using z.formatError() (v4)
-- Throwing inside refinements or transforms
-- z.coerce.boolean() for string booleans
-- Assuming z.object() preserves unknown keys
-- z.union() for tagged objects
-- reportInput in production
-- z.lazy() for recursive schemas (v4)
-- Duplicating field definitions
+- 使用 parse() 配合 try/catch 而不是 safeParse()
+- 同步解析带有异步精化
+- 手动类型定义与模式并存
+- 已弃用的字符串格式链式调用（v4）
+- 使用 z.nativeEnum()（v4）
+- 使用 required_error/invalid_type_error（v4）
+- 使用 z.formatError()（v4）
+- 在精化或转换中抛出异常
+- 对字符串布尔值使用 z.coerce.boolean()
+- 假设 z.object() 保留未知键
+- 对带标签的对象使用 z.union()
+- 生产环境中使用 reportInput
+- 对递归模式使用 z.lazy()（v4）
+- 重复字段定义
 
-## Using parse() with try/catch instead of safeParse()
+## 使用 parse() 配合 try/catch 而不是 safeParse()
 
 ```typescript
-// BAD: verbose, catches unrelated errors
+// 不好: 冗长，捕获无关错误
 try {
   const user = UserSchema.parse(data)
   return { success: true, data: user }
@@ -31,7 +31,7 @@ try {
   throw e
 }
 
-// GOOD: discriminated result
+// 正确: 判别式结果
 const result = UserSchema.safeParse(data)
 if (result.success) {
   return { success: true, data: result.data }
@@ -40,21 +40,21 @@ if (result.success) {
 }
 ```
 
-## Sync parse with async refinements
+## 同步解析带有异步精化
 
 ```typescript
-// BAD: throws because refinement is async
+// 不好: 抛出异常，因为精化是异步的
 const Schema = z.email().refine(async (e) => !(await db.exists(e)))
-Schema.safeParse(data) // throws
+Schema.safeParse(data) // 抛出异常
 
-// GOOD: use safeParseAsync
+// 正确: 使用 safeParseAsync
 await Schema.safeParseAsync(data)
 ```
 
-## Manual type definitions alongside schemas
+## 手动类型定义与模式并存
 
 ```typescript
-// BAD: types drift from schema
+// 不好: 类型与模式分离
 interface User {
   name: string
   email: string
@@ -63,159 +63,159 @@ interface User {
 const UserSchema = z.object({
   name: z.string(),
   email: z.email(),
-  age: z.number(), // added to schema, forgot interface
+  age: z.number(), // 添加到模式，忘记接口
 })
 
-// GOOD: infer from schema
+// 正确: 从模式推断
 type User = z.infer<typeof UserSchema>
 ```
 
-## Deprecated string format chaining (v4)
+## 已弃用的字符串格式链式调用（v4）
 
 ```typescript
-// BAD: deprecated in v4
+// 不好: v4 中已弃用
 z.string().email()
 z.string().url()
 z.string().uuid()
 
-// GOOD: top-level format functions
+// 正确: 顶级格式函数
 z.email()
 z.url()
 z.uuid()
 ```
 
-## Using z.nativeEnum() (v4)
+## 使用 z.nativeEnum()（v4）
 
 ```typescript
 enum Status { Active = "active", Inactive = "inactive" }
 
-// BAD: removed in v4
+// 不好: v4 中已移除
 z.nativeEnum(Status)
 
-// GOOD: unified z.enum()
+// 正确: 统一的 z.enum()
 z.enum(Status)
 ```
 
-## Using required_error/invalid_type_error (v4)
+## 使用 required_error/invalid_type_error（v4）
 
 ```typescript
-// BAD: removed in v4
+// 不好: v4 中已移除
 z.string({ required_error: "Required", invalid_type_error: "Not a string" })
 z.number().min(5, { message: "Too small" })
 
-// GOOD: unified error parameter
+// 正确: 统一的错误参数
 z.string({ error: "Required" })
 z.number().min(5, { error: "Too small" })
-z.number().min(5, "Too small") // shorthand
+z.number().min(5, "Too small") // 简写形式
 ```
 
-## Using z.formatError() (v4)
+## 使用 z.formatError()（v4）
 
 ```typescript
-// BAD: deprecated
+// 不好: 已弃用
 z.formatError(error)
 
-// GOOD: use the right formatter
-z.flattenError(error)   // for flat forms
-z.treeifyError(error)   // for nested structures
-z.prettifyError(error)  // for logging
+// 正确: 使用正确的格式化器
+z.flattenError(error)   // 用于扁平表单
+z.treeifyError(error)   // 用于嵌套结构
+z.prettifyError(error)  // 用于日志记录
 ```
 
-## Throwing inside refinements or transforms
+## 在精化或转换中抛出异常
 
 ```typescript
-// BAD: bypasses Zod error handling
+// 不好: 绕过 Zod 错误处理
 z.number().refine((n) => {
-  if (n <= 0) throw new Error("Must be positive")
+  if (n <= 0) throw new Error("必须是正数")
   return true
 })
 
 z.string().transform((val) => {
   const n = parseInt(val)
-  if (isNaN(n)) throw new Error("Not a number")
+  if (isNaN(n)) throw new Error("不是数字")
   return n
 })
 
-// GOOD: return boolean from refine
-z.number().refine((n) => n > 0, { error: "Must be positive" })
+// 正确: 从 refine 返回布尔值
+z.number().refine((n) => n > 0, { error: "必须是正数" })
 
-// GOOD: validate then transform
+// 正确: 先验证后转换
 z.string()
-  .refine((val) => !isNaN(parseInt(val)), { error: "Not numeric" })
+  .refine((val) => !isNaN(parseInt(val)), { error: "不是数字" })
   .transform((val) => parseInt(val))
 
-// BEST: pipe for staged parsing
+// 最好: 使用 pipe 进行分阶段解析
 z.string().pipe(z.coerce.number()).pipe(z.number().positive())
 ```
 
-## z.coerce.boolean() for string booleans
+## 对字符串布尔值使用 z.coerce.boolean()
 
 ```typescript
-// BAD: Boolean("false") === true
+// 不好: Boolean("false") === true
 z.coerce.boolean().parse("false") // true
 z.coerce.boolean().parse("0")     // true
 
-// GOOD: z.stringbool() handles string booleans correctly
+// 正确: z.stringbool() 正确处理字符串布尔值
 z.stringbool().parse("false") // false
 z.stringbool().parse("0")     // false
 ```
 
-## Assuming z.object() preserves unknown keys
+## 假设 z.object() 保留未知键
 
 ```typescript
-// BAD: unknown keys are silently stripped
+// 不好: 未知键被静默剥离
 const data = { name: "Alice", role: "admin", debug: true }
 z.object({ name: z.string() }).parse(data)
-// { name: "Alice" } — role and debug are gone
+// { name: "Alice" } — role 和 debug 消失了
 
-// GOOD: choose explicitly
-z.strictObject({ name: z.string() }) // rejects unknown
-z.looseObject({ name: z.string() })  // preserves unknown
+// 正确: 明确选择
+z.strictObject({ name: z.string() }) // 拒绝未知
+z.looseObject({ name: z.string() })  // 保留未知
 ```
 
-## z.union() for tagged objects
+## 对带标签的对象使用 z.union()
 
 ```typescript
-// BAD: sequential matching, poor error messages
+// 不好: 顺序匹配，错误消息差
 z.union([
   z.object({ type: z.literal("a"), value: z.string() }),
   z.object({ type: z.literal("b"), count: z.number() }),
 ])
 
-// GOOD: O(1) dispatch on discriminator
+// 正确: 基于判别器的 O(1) 分发
 z.discriminatedUnion("type", [
   z.object({ type: z.literal("a"), value: z.string() }),
   z.object({ type: z.literal("b"), count: z.number() }),
 ])
 ```
 
-## reportInput in production
+## 生产环境中使用 reportInput
 
 ```typescript
-// BAD: leaks sensitive data into error logs
+// 不好: 泄漏敏感数据到错误日志
 app.post("/login", (req, res) => {
   const result = schema.safeParse(req.body, { reportInput: true })
   if (!result.success) {
-    logger.error(result.error.issues) // may contain passwords
+    logger.error(result.error.issues) // 可能包含密码
   }
 })
 
-// GOOD: development only
+// 正确: 仅开发环境使用
 schema.safeParse(req.body, {
   reportInput: process.env.NODE_ENV === "development",
 })
 ```
 
-## z.lazy() for recursive schemas (v4)
+## 对递归模式使用 z.lazy()（v4）
 
 ```typescript
-// BAD: z.lazy() removed in v4
+// 不好: z.lazy() 在 v4 中已移除
 const Tree = z.object({
   value: z.string(),
   children: z.lazy(() => z.array(Tree)),
 })
 
-// GOOD: getter pattern
+// 正确: getter 模式
 const Tree = z.object({
   value: z.string(),
   get children() {
@@ -224,14 +224,14 @@ const Tree = z.object({
 })
 ```
 
-## Duplicating field definitions
+## 重复字段定义
 
 ```typescript
-// BAD: fields duplicated — will drift
+// 不好: 字段重复 — 会分离
 const CreateUser = z.object({ name: z.string(), email: z.email() })
 const UpdateUser = z.object({ name: z.string().optional(), email: z.email().optional() })
 
-// GOOD: derive from base
+// 正确: 从基础派生
 const User = z.object({ name: z.string(), email: z.email() })
 const CreateUser = User
 const UpdateUser = User.partial()

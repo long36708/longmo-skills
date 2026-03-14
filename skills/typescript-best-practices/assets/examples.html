@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TypeScript 最佳实践示例</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 20px;
+      line-height: 1.6;
+    }
+
+    h1 {
+      color: #333;
+      margin-bottom: 30px;
+    }
+
+    section {
+      margin: 40px 0;
+      padding: 20px;
+      border: 1px solid #eee;
+      border-radius: 8px;
+    }
+
+    h2 {
+      color: #555;
+      margin-bottom: 20px;
+    }
+
+    code {
+      background: #f5f5f5;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: 'Monaco', 'Courier New', monospace;
+    }
+
+    pre {
+      background: #f5f5f5;
+      padding: 16px;
+      border-radius: 4px;
+      overflow-x: auto;
+    }
+
+    pre code {
+      background: none;
+      padding: 0;
+    }
+
+    .demo {
+      background: #f9f9f9;
+      padding: 20px;
+      border-radius: 8px;
+      margin: 16px 0;
+    }
+
+    button {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      background: #007bff;
+      color: white;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background 0.2s;
+    }
+
+    button:hover {
+      background: #0056b3;
+    }
+
+    button:active {
+      background: #004085;
+    }
+
+    .output {
+      background: white;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      margin-top: 10px;
+      min-height: 40px;
+    }
+
+    .feature {
+      margin: 20px 0;
+    }
+
+    .feature-title {
+      font-weight: bold;
+      margin-bottom: 8px;
+      color: #007bff;
+    }
+  </style>
+</head>
+<body>
+  <h1>TypeScript 最佳实践示例</h1>
+
+  <section>
+    <h2>类型定义示例</h2>
+
+    <div class="demo">
+      <div class="feature">
+        <div class="feature-title">字面量类型</div>
+        <button id="literal-demo">测试字面量类型</button>
+        <div class="output" id="literal-output"></div>
+      </div>
+
+      <div class="feature">
+        <div class="feature-title">类型守卫</div>
+        <button id="guard-demo">测试类型守卫</button>
+        <div class="output" id="guard-output"></div>
+      </div>
+
+      <div class="feature">
+        <div class="feature-title">类型推断</div>
+        <button id="infer-demo">测试类型推断</button>
+        <div class="output" id="infer-output"></div>
+      </div>
+    </div>
+
+    <pre><code>// 字面量类型示例
+const UserRole = {
+  ADMIN: 'admin',
+  USER: 'user',
+  GUEST: 'guest',
+} as const;
+
+type UserRoleType = (typeof UserRole)[keyof typeof UserRole];
+// UserRoleType = 'admin' | 'user' | 'guest'
+
+// 类型守卫示例
+function isString(value: unknown): value is string {
+  return typeof value === 'string';
+}
+
+if (isString(value)) {
+  // TypeScript 知道 value 是 string
+}
+
+// 类型推断示例
+function identity<T>(arg: T): T {
+  return arg;
+}
+
+const result = identity('hello'); // 推断为 string</code></pre>
+  </section>
+
+  <section>
+    <h2>泛型示例</h2>
+
+    <div class="demo">
+      <div class="feature">
+        <div class="feature-title">泛型函数</div>
+        <button id="generic-demo">测试泛型函数</button>
+        <div class="output" id="generic-output"></div>
+      </div>
+    </div>
+
+    <pre><code>// 泛型函数示例
+function map<T, U>(array: T[], fn: (item: T) => U): U[] {
+  return array.map(fn);
+}
+
+const numbers = [1, 2, 3, 4, 5];
+const doubled = map(numbers, n => n * 2);
+// doubled: number[]
+
+function filter<T>(array: T[], predicate: (item: T) => boolean): T[] {
+  return array.filter(predicate);
+}
+
+const evens = filter(numbers, n => n % 2 === 0);
+// evens: number[]</code></pre>
+  </section>
+
+  <section>
+    <h2>工具类型示例</h2>
+
+    <div class="demo">
+      <div class="feature">
+        <div class="feature-title">Partial 类型</div>
+        <button id="partial-demo">测试 Partial</button>
+        <div class="output" id="partial-output"></div>
+      </div>
+
+      <div class="feature">
+        <div class="feature-title">Pick 类型</div>
+        <button id="pick-demo">测试 Pick</button>
+        <div class="output" id="pick-output"></div>
+      </div>
+
+      <div class="feature">
+        <div class="feature-title">Omit 类型</div>
+        <button id="omit-demo">测试 Omit</button>
+        <div class="output" id="omit-output"></div>
+      </div>
+    </div>
+
+    <pre><code>// 工具类型示例
+interface User {
+  id: number;
+  name: string;
+  email: string;
+  age: number;
+}
+
+// Partial - 使所有属性可选
+type PartialUser = Partial<User>;
+// { id?: number; name?: string; email?: string; age?: number; }
+
+// Pick - 选择特定属性
+type UserContact = Pick<User, 'name' | 'email'>;
+// { name: string; email: string; }
+
+// Omit - 排除特定属性
+type UserWithoutId = Omit<User, 'id'>;
+// { name: string; email: string; age: number; }
+
+// Readonly - 使所有属性只读
+type ReadonlyUser = Readonly<User>;
+// { readonly id: number; readonly name: string; ... }</code></pre>
+  </section>
+
+  <section>
+    <h2>条件类型示例</h2>
+
+    <div class="demo">
+      <div class="feature">
+        <div class="feature-title">条件类型</div>
+        <button id="conditional-demo">测试条件类型</button>
+        <div class="output" id="conditional-output"></div>
+      </div>
+    </div>
+
+    <pre><code>// 条件类型示例
+type NonNullable<T> = T extends null | undefined ? never : T;
+
+type WithId<T> = T extends { id?: number }
+  ? { id: number } & T
+  : T;
+
+type StatusResult<T, E = Error> =
+  | { status: 'success'; data: T }
+  | { status: 'error'; error: E }
+  | { status: 'loading' };
+
+// 使用示例
+const success: StatusResult<string> = {
+  status: 'success',
+  data: 'Hello',
+};
+
+const error: StatusResult<string, Error> = {
+  status: 'error',
+  error: new Error('Failed'),
+};</code></pre>
+  </section>
+
+  <section>
+    <h2>类型安全示例</h2>
+
+    <div class="demo">
+      <div class="feature">
+        <div class="feature-title">类型安全检查</div>
+        <button id="safety-demo">测试类型安全</button>
+        <div class="output" id="safety-output"></div>
+      </div>
+    </div>
+
+    <pre><code>// 类型安全示例
+// 使用 unknown 而不是 any
+function parseJSON(json: string): unknown {
+  return JSON.parse(json);
+}
+
+const data = parseJSON('{"name":"John"}');
+
+// 必须在使用前检查类型
+if (typeof data === 'object' && data !== null && 'name' in data) {
+  const name = (data as { name: string }).name;
+  console.log(name);
+}
+
+// 使用类型守卫
+function isUser(value: unknown): value is { name: string; email: string } {
+  return typeof value === 'object' &&
+         value !== null &&
+         'name' in value &&
+         'email' in value;
+}
+
+if (isUser(data)) {
+  console.log(data.name, data.email);
+}</code></pre>
+  </section>
+
+  <section>
+    <h2>最佳实践清单</h2>
+
+    <div class="demo">
+      <h3>使用 TypeScript 时的最佳实践：</h3>
+      <ul>
+        <li>✅ 使用 <code>as const</code> 创建字面量类型</li>
+        <li>✅ 利用工具类型减少重复代码</li>
+        <li>✅ 创建泛型函数提高代码复用</li>
+        <li>✅ 使用类型守卫确保类型安全</li>
+        <li>✅ 优先使用 <code>unknown</code> 而不是 <code>any</code></li>
+        <li>✅ 使用 <code>readonly</code> 防止意外修改</li>
+        <li>✅ 为公共 API 添加 JSDoc 注释</li>
+        <li>✅ 使用映射类型定义派生类型</li>
+        <li>✅ 渐进式启用严格模式</li>
+        <li>✅ 创建类型测试验证正确性</li>
+        <li>✅ 优化复杂类型提高性能</li>
+        <li>✅ 使用条件类型处理复杂逻辑</li>
+        <li>✅ 利用模板字面量类型</li>
+        <li>✅ 组织类型定义提高可维护性</li>
+        <li>✅ 使用类型别名提高可读性</li>
+      </ul>
+    </div>
+  </section>
+
+  <script type="module">
+    // ===== 类型守卫示例 =====
+    function isString(value: unknown): value is string {
+      return typeof value === 'string';
+    }
+
+    function isNumber(value: unknown): value is number {
+      return typeof value === 'number' && !Number.isNaN(value);
+    }
+
+    function isArray(value: unknown): value is any[] {
+      return Array.isArray(value);
+    }
+
+    // ===== 泛型函数示例 =====
+    function identity<T>(arg: T): T {
+      return arg;
+    }
+
+    function map<T, U>(array: T[], fn: (item: T) => U): U[] {
+      return array.map(fn);
+    }
+
+    // ===== 演示 1: 字面量类型 =====
+    const literalButton = document.getElementById('literal-demo');
+    const literalOutput = document.getElementById('literal-output');
+
+    literalButton?.addEventListener('click', () => {
+      const UserRole = {
+        ADMIN: 'admin',
+        USER: 'user',
+        GUEST: 'guest',
+      };
+
+      const roles = Object.values(UserRole);
+      literalOutput.textContent = `可用角色: ${roles.join(', ')}`;
+    });
+
+    // ===== 演示 2: 类型守卫 =====
+    const guardButton = document.getElementById('guard-demo');
+    const guardOutput = document.getElementById('guard-output');
+
+    guardButton?.addEventListener('click', () => {
+      const values = [42, 'hello', null, undefined, true, {}];
+
+      const numbers = values.filter(isNumber);
+      const strings = values.filter(isString);
+
+      guardOutput.textContent = `数字: [${numbers.join(', ')}], 字符串: [${strings.join(', ')}]`;
+    });
+
+    // ===== 演示 3: 类型推断 =====
+    const inferButton = document.getElementById('infer-demo');
+    const inferOutput = document.getElementById('infer-output');
+
+    inferButton?.addEventListener('click', () => {
+      const result1 = identity('hello');
+      const result2 = identity(42);
+      const result3 = identity(true);
+
+      inferOutput.textContent = `类型: [${typeof result1}, ${typeof result2}, ${typeof result3}]`;
+    });
+
+    // ===== 演示 4: 泛型函数 =====
+    const genericButton = document.getElementById('generic-demo');
+    const genericOutput = document.getElementById('generic-output');
+
+    genericButton?.addEventListener('click', () => {
+      const numbers = [1, 2, 3, 4, 5];
+      const doubled = map(numbers, n => n * 2);
+      const squared = map(numbers, n => n * n);
+
+      genericOutput.textContent = `原数组: [${numbers.join(', ')}]\n` +
+        `加倍后: [${doubled.join(', ')}]\n` +
+        `平方后: [${squared.join(', ')}]`;
+    });
+
+    // ===== 演示 5: Partial 类型 =====
+    const partialButton = document.getElementById('partial-demo');
+    const partialOutput = document.getElementById('partial-output');
+
+    partialButton?.addEventListener('click', () => {
+      const user = { id: 1, name: 'John', email: 'john@example.com', age: 30 };
+      const partialUser: Partial<typeof user> = { name: 'Jane' };
+
+      partialOutput.textContent = `完整用户: ${JSON.stringify(user)}\n` +
+        `部分用户: ${JSON.stringify(partialUser)}`;
+    });
+
+    // ===== 演示 6: Pick 类型 =====
+    const pickButton = document.getElementById('pick-demo');
+    const pickOutput = document.getElementById('pick-output');
+
+    pickButton?.addEventListener('click', () => {
+      type User = { id: number; name: string; email: string; age: number };
+      type UserContact = Pick<User, 'name' | 'email'>;
+
+      const user: User = { id: 1, name: 'John', email: 'john@example.com', age: 30 };
+      const contact: UserContact = { name: user.name, email: user.email };
+
+      pickOutput.textContent = `联系方式: ${JSON.stringify(contact)}`;
+    });
+
+    // ===== 演示 7: Omit 类型 =====
+    const omitButton = document.getElementById('omit-demo');
+    const omitOutput = document.getElementById('omit-output');
+
+    omitButton?.addEventListener('click', () => {
+      type User = { id: number; name: string; email: string; age: number };
+      type UserWithoutId = Omit<User, 'id'>;
+
+      const user: User = { id: 1, name: 'John', email: 'john@example.com', age: 30 };
+      const userWithoutId: UserWithoutId = { name: user.name, email: user.email, age: user.age };
+
+      omitOutput.textContent = `无 ID 用户: ${JSON.stringify(userWithoutId)}`;
+    });
+
+    // ===== 演示 8: 条件类型 =====
+    const conditionalButton = document.getElementById('conditional-demo');
+    const conditionalOutput = document.getElementById('conditional-output');
+
+    conditionalButton?.addEventListener('click', () => {
+      type StatusResult<T, E = Error> =
+        | { status: 'success'; data: T }
+        | { status: 'error'; error: E }
+        | { status: 'loading' };
+
+      const success: StatusResult<string> = {
+        status: 'success',
+        data: '操作成功',
+      };
+
+      const error: StatusResult<never, string> = {
+        status: 'error',
+        error: '操作失败',
+      };
+
+      conditionalOutput.textContent = `成功结果: ${JSON.stringify(success)}\n` +
+        `错误结果: ${JSON.stringify(error)}`;
+    });
+
+    // ===== 演示 9: 类型安全 =====
+    const safetyButton = document.getElementById('safety-demo');
+    const safetyOutput = document.getElementById('safety-output');
+
+    safetyButton?.addEventListener('click', () => {
+      function parseJSON(json: string): unknown {
+        return JSON.parse(json);
+      }
+
+      const json = '{"name":"John","age":30}';
+      const data = parseJSON(json);
+
+      if (typeof data === 'object' && data !== null && 'name' in data) {
+        const name = (data as { name: string }).name;
+        safetyOutput.textContent = `解析成功: name = ${name}`;
+      }
+    });
+  </script>
+</body>
+</html>

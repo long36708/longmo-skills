@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Web Component Examples</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 20px;
+      line-height: 1.6;
+    }
+
+    h1 {
+      color: #333;
+    }
+
+    section {
+      margin: 40px 0;
+      padding: 20px;
+      border: 1px solid #eee;
+      border-radius: 8px;
+    }
+
+    code {
+      background: #f5f5f5;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: 'Monaco', 'Courier New', monospace;
+    }
+
+    pre {
+      background: #f5f5f5;
+      padding: 16px;
+      border-radius: 4px;
+      overflow-x: auto;
+    }
+
+    pre code {
+      background: none;
+      padding: 0;
+    }
+
+    .usage-demo {
+      background: #f9f9f9;
+      padding: 20px;
+      border-radius: 8px;
+      margin-top: 16px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Web Component Best Practices - Examples</h1>
+
+  <section>
+    <h2>Basic Usage</h2>
+    <p>Web Components are custom HTML elements that encapsulate their own structure, style, and behavior.</p>
+
+    <div class="usage-demo">
+      <h3>Example Counter Component</h3>
+      <x-counter label="My Counter"></x-counter>
+    </div>
+
+    <pre><code>&lt;x-counter label="My Counter"&gt;&lt;/x-counter&gt;</code></pre>
+  </section>
+
+  <section>
+    <h2>Attributes</h2>
+    <p>Components can be configured using HTML attributes:</p>
+
+    <div class="usage-demo">
+      <x-counter
+        label="Counter with Attributes"
+        value="25"
+        min="0"
+        max="100">
+      </x-counter>
+    </div>
+
+    <pre><code>&lt;x-counter
+  label="Counter with Attributes"
+  value="25"
+  min="0"
+  max="100"&gt;
+&lt;/x-counter&gt;</code></pre>
+  </section>
+
+  <section>
+    <h2>JavaScript API</h2>
+    <p>Components can be controlled via JavaScript:</p>
+
+    <div class="usage-demo">
+      <x-counter id="js-counter" label="JS Controlled Counter"></x-counter>
+      <div style="margin-top: 16px;">
+        <button id="js-increment">Increment</button>
+        <button id="js-decrement">Decrement</button>
+        <button id="js-reset">Reset</button>
+      </div>
+    </div>
+
+    <pre><code>const counter = document.querySelector('#js-counter');
+
+counter.value = 10;
+counter.label = 'Updated Label';
+
+counter.addEventListener('valuechange', (event) => {
+  console.log('New value:', event.detail.value);
+});</code></pre>
+
+    <script>
+      const jsCounter = document.querySelector('#js-counter');
+      const jsIncrement = document.querySelector('#js-increment');
+      const jsDecrement = document.querySelector('#js-decrement');
+      const jsReset = document.querySelector('#js-reset');
+
+      jsIncrement.addEventListener('click', () => {
+        jsCounter.value += 1;
+      });
+
+      jsDecrement.addEventListener('click', () => {
+        jsCounter.value -= 1;
+      });
+
+      jsReset.addEventListener('click', () => {
+        jsCounter.value = 0;
+      });
+
+      jsCounter.addEventListener('valuechange', (event) => {
+        console.log('New value:', event.detail.value);
+      });
+    </script>
+  </section>
+
+  <section>
+    <h2>Events</h2>
+    <p>Components emit custom events for state changes:</p>
+
+    <div class="usage-demo">
+      <x-counter id="event-counter" label="Event Demo Counter"></x-counter>
+      <div style="margin-top: 16px;">
+        <div>Events: <span id="event-log">None</span></div>
+      </div>
+    </div>
+
+    <pre><code>const counter = document.querySelector('#event-counter');
+
+counter.addEventListener('valuechange', (event) => {
+  console.log('Value changed:', event.detail.value);
+});
+
+counter.addEventListener('maxreached', () => {
+  console.log('Maximum value reached');
+});
+
+counter.addEventListener('minreached', () => {
+  console.log('Minimum value reached');
+});</code></pre>
+
+    <script>
+      const eventCounter = document.querySelector('#event-counter');
+      const eventLog = document.querySelector('#event-log');
+
+      eventCounter.addEventListener('valuechange', (event) => {
+        eventLog.textContent = `valuechange: ${event.detail.value}`;
+      });
+
+      eventCounter.addEventListener('maxreached', () => {
+        eventLog.textContent = 'maxreached';
+      });
+
+      eventCounter.addEventListener('minreached', () => {
+        eventLog.textContent = 'minreached';
+      });
+    </script>
+  </section>
+
+  <section>
+    <h2>Styling</h2>
+    <p>Components can be styled using CSS custom properties:</p>
+
+    <div class="usage-demo">
+      <style>
+        .styled-counter {
+          --button-background: #ff6b6b;
+          --button-hover-background: #ffa07a;
+          --button-active-background: #ff4757;
+          --button-color: white;
+          --button-hover-border-color: #ff4757;
+          --button-border-radius: 8px;
+          --button-padding: 12px 20px;
+          --button-font-size: 16px;
+          --value-font-size: 20px;
+          --value-color: #ff6b6b;
+          --gap: 12px;
+        }
+      </style>
+      <x-counter
+        class="styled-counter"
+        label="Styled Counter"
+        value="50">
+      </x-counter>
+    </div>
+
+    <pre><code>.styled-counter {
+  --button-background: #ff6b6b;
+  --button-hover-background: #ffa07a;
+  --button-active-background: #ff4757;
+  --button-color: white;
+  --button-hover-border-color: #ff4757;
+  --button-border-radius: 8px;
+  --button-padding: 12px 20px;
+  --button-font-size: 16px;
+  --value-font-size: 20px;
+  --value-color: #ff6b6b;
+  --gap: 12px;
+}</code></pre>
+  </section>
+
+  <section>
+    <h2>Slots</h2>
+    <p>Components can accept external content through slots:</p>
+
+    <div class="usage-demo">
+      <x-counter label="Counter with Slot">
+        <span style="font-weight: bold;">Custom Content</span>
+      </x-counter>
+    </div>
+
+    <pre><code>&lt;x-counter label="Counter with Slot"&gt;
+  &lt;span style="font-weight: bold;"&gt;Custom Content&lt;/span&gt;
+&lt;/x-counter&gt;</code></pre>
+  </section>
+
+  <section>
+    <h2>Disabled State</h2>
+    <p>Components can be disabled to prevent interaction:</p>
+
+    <div class="usage-demo">
+      <x-counter label="Disabled Counter" disabled value="25"></x-counter>
+    </div>
+
+    <pre><code>&lt;x-counter label="Disabled Counter" disabled value="25"&gt;&lt;/x-counter&gt;</code></pre>
+  </section>
+
+  <section>
+    <h2>Multiple Instances</h2>
+    <p>Multiple component instances work independently:</p>
+
+    <div class="usage-demo">
+      <div style="display: flex; gap: 20px;">
+        <x-counter label="Counter 1" value="10"></x-counter>
+        <x-counter label="Counter 2" value="20"></x-counter>
+        <x-counter label="Counter 3" value="30"></x-counter>
+      </div>
+    </div>
+
+    <pre><code>&lt;x-counter label="Counter 1" value="10"&gt;&lt;/x-counter&gt;
+&lt;x-counter label="Counter 2" value="20"&gt;&lt;/x-counter&gt;
+&lt;x-counter label="Counter 3" value="30"&gt;&lt;/x-counter&gt;</code></pre>
+  </section>
+
+  <section>
+    <h2>Keyboard Navigation</h2>
+    <p>Components support keyboard navigation:</p>
+
+    <div class="usage-demo">
+      <x-counter label="Keyboard Navigation Counter" value="50"></x-counter>
+      <div style="margin-top: 16px; font-size: 14px; color: #666;">
+        <p>Try these keyboard shortcuts:</p>
+        <ul>
+          <li><kbd>↑</kbd> or <kbd>ArrowUp</kbd> - Increment</li>
+          <li><kbd>↓</kbd> or <kbd>ArrowDown</kbd> - Decrement</li>
+          <li><kbd>Home</kbd> - Set to minimum</li>
+          <li><kbd>End</kbd> - Set to maximum</li>
+          <li><kbd>R</kbd> - Reset</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Best Practices Summary</h2>
+    <ul>
+      <li>✅ Use semantic HTML for better accessibility</li>
+      <li>✅ Include ARIA attributes for screen readers</li>
+      <li>✅ Support keyboard navigation</li>
+      <li>✅ Use CSS custom properties for theming</li>
+      <li>✅ Emit custom events for state changes</li>
+      <li>✅ Sync attributes with JavaScript properties</li>
+      <li>✅ Clean up resources in disconnectedCallback</li>
+      <li>✅ Use arrow functions for event handlers</li>
+      <li>✅ Provide clear TypeScript types</li>
+      <li>✅ Write comprehensive tests</li>
+    </ul>
+  </section>
+
+  <script type="module">
+    // Import the counter component
+    import { CounterElement, registerCounterComponent } from './counter.js';
+
+    // Register the component
+    registerCounterComponent();
+  </script>
+</body>
+</html>

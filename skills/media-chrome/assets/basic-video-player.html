@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Media Chrome 基础视频播放器</title>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/media-chrome@4/+esm"></script>
+  <style>
+    /* 隐藏未定义的元素，防止布局偏移 */
+    :not(:defined) {
+      display: none;
+    }
+
+    /* 基础样式 */
+    body {
+      margin: 0;
+      padding: 20px;
+      background: #1a1a1a;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      color: #ffffff;
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    /* 播放器容器样式 */
+    media-controller:not([audio]) {
+      display: block;
+      max-width: 100%;
+      aspect-ratio: 16 / 9;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #000;
+    }
+
+    video {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    /* 自定义主题色 */
+    media-controller {
+      --media-primary-color: #3b82f6;
+      --media-control-background: rgba(0, 0, 0, 0.7);
+      --media-control-hover-background: rgba(0, 0, 0, 0.9);
+    }
+
+    /* 响应式调整 */
+    @media (max-width: 768px) {
+      body {
+        padding: 10px;
+      }
+
+      media-controller:not([audio]) {
+        aspect-ratio: 16 / 9;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Media Chrome 基础视频播放器</h1>
+
+    <media-controller>
+      <video
+        slot="media"
+        src="https://stream.mux.com/A3VXy02VoUinw01pwyomEO3bHnG4P32xzV7u1j1FSzjNg/high.mp4"
+        playsinline
+        crossorigin
+      ></video>
+      <media-poster-image
+        slot="poster"
+        src="https://image.mux.com/A3VXy02VoUinw01pwyomEO3bHnG4P32xzV7u1j1FSzjNg/thumbnail.jpg"
+      ></media-poster-image>
+      <media-loading-indicator slot="centered-chrome" noautohide></media-loading-indicator>
+      <media-control-bar>
+        <media-play-button></media-play-button>
+        <media-mute-button></media-mute-button>
+        <media-volume-range></media-volume-range>
+        <media-time-display></media-time-display>
+        <media-time-range></media-time-range>
+        <media-duration-display></media-duration-display>
+        <media-fullscreen-button></media-fullscreen-button>
+      </media-control-bar>
+    </media-controller>
+  </div>
+</body>
+</html>
